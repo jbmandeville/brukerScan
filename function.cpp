@@ -390,7 +390,8 @@ void MainWindow::createEPITemplate(bool MC)
     QString message = "Create EPI template (fast)";
     QStringList arguments;
     arguments.append(comFileName);
-    spawnProcess(process,_jipProcess,arguments,message,"");
+    QString jipProcess = _scriptDirectory + "jip";
+    spawnProcess(process,jipProcess,arguments,message,"");
 }
 
 void MainWindow::resliceAnatomyToEPI(int exitCode, QProcess::ExitStatus exitStatus)

@@ -34,12 +34,10 @@ class MainWindow : public QMainWindow
 
 private:
 
-    QString _fastmapProcess     = "/usr/pubsw/packages/jip/bin/Linux-x86_64/FM";
-//    QString _jipProcess         = "/usr/pubsw/packages/jip/bin/Linux-x86_64/jip";
-//    QString _scriptDirectory    = "/space/deltabp/1/users/public/script/analyze-petmr/";
-//    QString _fastmapProcess     = "/Users/jbm/QtApps/build-FM-Desktop_Qt_5_13_0_clang_64bit-Release/FM.app/Contents/MacOS/FM";
-    QString _jipProcess         = "/Users/jbm/unix/jip-new/jip/bin/Linux-x86_64/jip";
-    QString _scriptDirectory    = "/Users/jbm/unix/script/analyze-fm";
+//    QString _fastmapProcess     = "/usr/pubsw/packages/jip/bin/Linux-x86_64/FM";
+
+    QString _fastmapProcess     = "/Users/jbm/QtApps/build-FM-Desktop_Qt_5_13_0_clang_64bit-Release/FM.app/Contents/MacOS/FM";
+    QString _scriptDirectory    = "/Users/jbm/unix/script/analyze-fm/";
     QString _findsessionProcess = "/usr/pubsw/bin/findsession";
     QString _dicomDumpProcess   = "/usr/bin/dcmdump";
 
@@ -93,6 +91,7 @@ private:
         // Image Window
         QByteArray imageWindowGeometry;
         QByteArray browserWindowGeometry;
+        QByteArray helpWindowGeometry;
         double fmSmoothing=0.;
     };
 
@@ -274,8 +273,11 @@ private slots:
     }
     inline void showHelpBrowser(bool show)
     {
+        FUNC_ENTER << show;
+        FUNC_INFO << _helpTool;
         if ( show ) _helpTool->show();
         else        _helpTool->hide();
+        FUNC_EXIT;
     }
     void showNone();
     void showNotes(bool show);

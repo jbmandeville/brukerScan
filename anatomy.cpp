@@ -221,16 +221,22 @@ void MainWindow::updateAnatomyFileName()
 }
 
 void MainWindow::generateBrukerNifti(bool anatomical)
-{
-    // use jip to create the MC template, and then go on to the next step
-    QString message = "Create EPI template (fast)";
-    QStringList arguments;
-    QString comFileName;
+{    // use jip to create the MC template, and then go on to the next step
+    QString exe;
     if ( _reorderRaw->isChecked() )
-        comFileName = _scriptDirectory + "reorder.csh";
+        exe = _scriptDirectory + "reorder.script";
     else
-        comFileName = _scriptDirectory + "nifti.csh";
-    arguments.append(comFileName);
+        exe = _scriptDirectory + "nifti.script";
+
+    QStringList arguments;
+    if ( anatomical )
+    {
+        arguments.append("anatomy");
+        arguments.append(_anatomyDirBox->currentText());
+    }
+    else
+    {
+    }
     auto *process = new QProcess();
     if ( anatomical )
         connect(process, SIGNAL(finished(int, QProcess::ExitStatus)),
@@ -238,12 +244,14 @@ void MainWindow::generateBrukerNifti(bool anatomical)
     else
         connect(process, SIGNAL(finished(int, QProcess::ExitStatus)),
                 this, SLOT(finishedGenerateBrukerNiftiFunctional(int, QProcess::ExitStatus)));
-    spawnProcess(process,_jipProcess,arguments,message,"");
+    QString message = "Create NIFTI file from 2dseq";
+    spawnProcess(process,exe,arguments,message,"");
+    qInfo() << exe << arguments;
 }
 
 void MainWindow::finishedGenerateBrukerNiftiAnatomical(int exitCode, QProcess::ExitStatus exitStatus )
 {
-    qInfo() << "finished: alignment";
+    qInfo() << "finished: generate NIFTI";
     qInfo() << "exit code" << exitCode << "exit status" << exitStatus;
     updateAnatomyFileName();
     enableAnatomyActionButtons();

@@ -86,25 +86,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     quitAction->setShortcut(Qt::ControlModifier + Qt::Key_Q);
     connect(quitAction, &QAction::triggered, this, &MainWindow::exitApp);
 
-    QSize iconSizeSmall(24,24);
-    const QIcon *showOutputBrowser = new QIcon(":/My-Icons/textOutput.png");
-    auto *outputBrowserAction = new QAction(*showOutputBrowser,"browser",this);
-    outputBrowserAction->setCheckable(true);
-    outputBrowserAction->setChecked(false);
-    connect(outputBrowserAction, SIGNAL(toggled(bool)), this, SLOT(showOutputBrowser(bool)));
-    outputBrowserAction->setToolTip("Show or hide the process output window");
-
-    auto *helpBrowserAction = new QAction("HELP",this);
-    helpBrowserAction->setCheckable(true);
-    helpBrowserAction->setChecked(false);
-    connect(helpBrowserAction, SIGNAL(toggled(bool)), this, SLOT(showHelpBrowser(bool)));
-    helpBrowserAction->setToolTip("Show or hide the help window");
-
     _outputBrowser = new QTextBrowser;
     _helpBrowser   = new QTextBrowser;
     _helpBrowser->setOpenLinks(true);
     _helpBrowser->setOpenExternalLinks(true);
-
     _helpTool = new QWidget();
     auto *buttonLayout = new QHBoxLayout();
     auto *helpForward  = new QPushButton(">>");
@@ -118,6 +103,20 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
     connect(helpBackward, SIGNAL(clicked()), this, SLOT(helpGoBackward()));
     connect(helpForward,  SIGNAL(clicked()), this, SLOT(helpGoForward()));
+
+    auto *helpBrowserAction = new QAction("HELP",this);
+    helpBrowserAction->setCheckable(true);
+    helpBrowserAction->setChecked(false);
+    connect(helpBrowserAction, SIGNAL(toggled(bool)), this, SLOT(showHelpBrowser(bool)));
+    helpBrowserAction->setToolTip("Show or hide the help window");
+
+    QSize iconSizeSmall(24,24);
+    const QIcon *showOutputBrowser = new QIcon(":/My-Icons/textOutput.png");
+    auto *outputBrowserAction = new QAction(*showOutputBrowser,"browser",this);
+    outputBrowserAction->setCheckable(true);
+    outputBrowserAction->setChecked(false);
+    connect(outputBrowserAction, SIGNAL(toggled(bool)), this, SLOT(showOutputBrowser(bool)));
+    outputBrowserAction->setToolTip("Show or hide the process output window");
 
     QWidget* spacer = new QWidget();
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -158,7 +157,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     */
 
     loadNotes();
-    loadHelp(page_download);
+    loadHelp(page_anatomy);
     openedAnatomyPage();
     readUnpackLog();
     readAvailableScanList();
@@ -168,7 +167,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
     restoreGeometry(_savedSettings.imageWindowGeometry);
     _outputBrowser->restoreGeometry(_savedSettings.browserWindowGeometry);
-    _helpTool->restoreGeometry(_savedSettings.browserWindowGeometry);
+    _helpTool->restoreGeometry(_savedSettings.imageWindowGeometry);
 }
 
 void MainWindow::helpGoBackward()
@@ -571,14 +570,12 @@ void MainWindow::readQSettings()
     QByteArray defaultImageWindowGeometry = saveGeometry();  // defined in ImageWindow constructor
     _savedSettings.imageWindowGeometry    = _savedQSettings.value("imageWindowGeometry",defaultImageWindowGeometry).toByteArray();
     _savedSettings.browserWindowGeometry  = _savedQSettings.value("browserWindowGeometry",defaultImageWindowGeometry).toByteArray();
+    _savedSettings.helpWindowGeometry     = _savedQSettings.value("helpWindowGeometry",defaultImageWindowGeometry).toByteArray();
 }
 
 void MainWindow::writeQSettings()
 {
-    if ( !isMaximized() )
-        _savedQSettings.setValue("imageWindowGeometry",saveGeometry());
-    if ( !isMaximized() )
-        _savedQSettings.setValue("browserWindowGeometry",_outputBrowser->saveGeometry());
+    _savedQSettings.setValue("imageWindowGeometry",saveGeometry());
 
     _savedQSettings.sync();
 }
