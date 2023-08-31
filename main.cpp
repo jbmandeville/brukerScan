@@ -1,4 +1,4 @@
-#include "MRIProcess.h"
+#include "brukerScan.h"
 #include <QApplication>
 
 int main(int argc, char *argv[])

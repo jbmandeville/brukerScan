@@ -1,7 +1,6 @@
 #include <QtWidgets>
 #include <QFileInfo>
-#include "MRIProcess.h"
-//#include "ImageIO.h"
+#include "brukerScan.h"
 
 void MainWindow::createCleanPage()
 {
@@ -27,21 +26,17 @@ void MainWindow::createCleanPage()
 
     _cleanDICOMs         = new QPushButton("clean DICOMS",_cleanPage);
     _cleanNII_auxilliary = new QPushButton("clean intermediate NIFTIs",_cleanPage);
-    _cleanNII_mc         = new QPushButton("clean pre-alignment files (mc.nii)",_cleanPage);
     _cleanNII_raw        = new QPushButton("clean raw.nii",_cleanPage);
     connect(_cleanDICOMs,         SIGNAL(pressed()), this, SLOT(cleanDICOMFiles()));
     connect(_cleanNII_auxilliary, SIGNAL(pressed()), this, SLOT(cleanAuxNIIFiles()));
-    connect(_cleanNII_mc, SIGNAL(pressed()), this, SLOT(cleanMCFiles()));
     connect(_cleanNII_raw,        SIGNAL(pressed()), this, SLOT(cleanRawNIIFiles()));
     _cleanDICOMs->setToolTip("No reason to keep DICOMs after extracting time tags.");
     _cleanNII_auxilliary->setToolTip("These intermediate files can be recovered if you have the raw files.");
-    _cleanNII_mc->setToolTip("If you clean these, you can't easily change alignment/smoothing without repeating earlier steps.");
     _cleanNII_raw->setToolTip("These can be recovered by down-loading again, but it takes time.");
 
     auto *actionLayout = new QVBoxLayout();
     actionLayout->addWidget(_cleanDICOMs);
     actionLayout->addWidget(_cleanNII_auxilliary);
-    actionLayout->addWidget(_cleanNII_mc);
     actionLayout->addWidget(_cleanNII_raw);
     auto *actionBox = new QGroupBox("Clean directories (remove files)");
     actionBox->setLayout(actionLayout);
@@ -70,24 +65,15 @@ void MainWindow::setupScanTypes()
     FUNC_ENTER;
     for (int jType=0; jType<_scans.size(); jType++)
     {
-        downloadScan scan = _scans.at(jType);
-        QString categoryName = scan.categoryName;
-        if ( scan.existsOnDisk )
+        scanType scan = _scans.at(jType);
+        bool found = false;
+        if ( !found )
         {
-            bool found = false;
-            for (int jItem=0; jItem<_cleanScanTypeItems.count(); jItem++)
-                if ( ! _cleanScanTypeItems.at(jItem).text().compare(categoryName) )
-                    found = true;
-            FUNC_INFO << "check scan" << scan.categoryName << scan.scanNumberNew << found;
-            if ( !found )
-            {
-                QListWidgetItem item;
-                item.setText(categoryName);
-                item.setFlags(Qt::ItemIsEnabled | Qt::ItemIsUserCheckable);
-                item.setCheckState(Qt::Checked);
-                item.setHidden(false);
-                _cleanScanTypeItems.append(item);
-            }
+            QListWidgetItem item;
+            item.setFlags(Qt::ItemIsEnabled | Qt::ItemIsUserCheckable);
+            item.setCheckState(Qt::Checked);
+            item.setHidden(false);
+            _cleanScanTypeItems.append(item);
         }
     }
     for (int jItem=0; jItem<_cleanScanTypeItems.count(); jItem++)
@@ -101,19 +87,11 @@ void MainWindow::updateCleaningList()
 {
     for (int jType=0; jType<_scans.size(); jType++)
     {
-        downloadScan scan = _scans.at(jType);
-        QString categoryName = scan.categoryName;
-        if ( scan.existsOnDisk )
-        {
-            _scans[jType].selectedForCleaning = false;
-            for (int jItem=0; jItem<_cleanScanTypeItems.count(); jItem++)
-                if ( ! _cleanScanTypeItems.at(jItem).text().compare(categoryName) )
-                    _scans[jType].selectedForCleaning = _cleanScanTypeItems.at(jItem).checkState();
-        }
+        scanType scan = _scans.at(jType);
+        _scans[jType].selectedForCleaning = false;
     }
     findDICOMs(false);
     findAuxFiles(false);
-    findMCFiles(false);
     findRawFiles(false);
     findAllFiles();
 }
@@ -129,204 +107,14 @@ void MainWindow::openedCleanPage()
 
 void MainWindow::findDICOMs(bool remove)
 {
-    qint64 totalSizeAll=0;
-
-    for (int jType=0; jType<_scans.size(); jType++)
-    {
-        downloadScan scan = _scans.at(jType);
-        qint64 totalSizeThisCategory=0;
-        if ( scan.existsOnDisk && scan.selectedForCleaning )
-        {
-            QString spec = "MR.*";
-            QString dirName = scan.categoryName + "/" + scan.scanNumberNew;
-            QDir dir(dirName);
-            QStringList const fileList = dir.entryList( {spec}, QDir::Files | QDir::NoSymLinks);
-
-            qint64 totalSizeThisDir=0;
-            for (int jFile=0; jFile<fileList.size(); jFile++)
-            {
-                QString fileName = dirName + "/" + fileList.at(jFile);
-                QFileInfo checkFile(fileName);
-                if ( remove )
-                {
-                    QFile file(fileName);
-                    bool success = file.remove();
-                    if ( !success )
-                        qInfo() << "failed to remove file" << fileName;
-                    else
-                        totalSizeThisDir += checkFile.size();
-                }
-                else
-                    totalSizeThisDir += checkFile.size();
-            }
-            totalSizeThisCategory += totalSizeThisDir;
-            if ( jType == _scans.size()-1 || (scan.category != _scans.at(jType+1).category) )
-                FUNC_INFO << "total size of DICOMS in" << scan.categoryName << "=" << totalSizeThisCategory/(1024*1024) << "Mb";
-        }
-        totalSizeAll += totalSizeThisCategory;
-    }
-    QString gigabytes; gigabytes.setNum(static_cast<double>(totalSizeAll)/(1024.*1024.*1024.),'g',3);
-    totalSizeAll /= 1024*1024;  // b -> Mb
-    if ( remove )
-        qInfo() << "Removed" << gigabytes << "Gb";
-    else
-        _cleanDICOMs->setText(QString("clean DICOMS: disk space = %1 Gb").arg(gigabytes));
-    _cleanDICOMs->setEnabled(totalSizeAll > 0);
-
-    FUNC_EXIT;
 }
 
 void MainWindow::findAuxFiles(bool remove)
 {
-    qint64 totalSizeAll=0;
-
-    for (int jType=0; jType<_scans.size(); jType++)
-    {
-        downloadScan scan = _scans.at(jType);
-        qint64 totalSizeThisCategory=0;
-        if ( scan.existsOnDisk && scan.selectedForCleaning )
-        {
-            QStringList spec;
-            spec.append("MR*.nii");
-            spec.append("reslice.nii"); // reslice --> mc
-
-            QString dirName = scan.categoryName + "/" + scan.scanNumberNew;
-            QDir dir(dirName);
-//            QStringList const fileList = dir.entryList(spec, QDir::Files | QDir::NoSymLinks);
-            QStringList const fileList = dir.entryList(spec, QDir::Files);
-
-            qint64 totalSizeThisDir=0;
-            for (int jFile=0; jFile<fileList.size(); jFile++)
-            {
-                QString fileName = dirName + "/" + fileList.at(jFile);
-                QFileInfo checkFile(fileName);
-                if ( remove )
-                {
-                    QFile file(fileName);
-                    bool success = file.remove();
-                    if ( !success )
-                        qInfo() << "failed to remove file" << fileName;
-                    else
-                        totalSizeThisDir += checkFile.size();
-                }
-                else
-                    totalSizeThisDir += checkFile.size();
-            }
-            totalSizeThisCategory += totalSizeThisDir;
-            if ( jType == _scans.size()-1 || (scan.category != _scans.at(jType+1).category) )
-                FUNC_INFO << "total size of DICOMS in" << scan.categoryName << "=" << totalSizeThisCategory/(1024*1024) << "Mb";
-        }
-        totalSizeAll += totalSizeThisCategory;
-    }
-    QString gigabytes; gigabytes.setNum(static_cast<double>(totalSizeAll)/(1024.*1024.*1024.),'g',3);
-    totalSizeAll /= 1024*1024;  // b -> Mb
-    if ( remove )
-        qInfo() << "Removed" << gigabytes << "Gb";
-    else
-        _cleanNII_auxilliary->setText(QString("clean intermediate NIFTIs: disk space = %1 Gb").arg(gigabytes));
-    _cleanNII_auxilliary->setEnabled(totalSizeAll > 0);
-    FUNC_EXIT;
-}
-
-void MainWindow::findMCFiles(bool remove)
-{
-    qint64 totalSizeAll=0;
-
-    for (int jType=0; jType<_scans.size(); jType++)
-    {
-        downloadScan scan = _scans.at(jType);
-        qint64 totalSizeThisCategory=0;
-        if ( scan.existsOnDisk && scan.selectedForCleaning )
-        {
-            QStringList spec;
-            spec.append("mc.nii");
-
-            QString dirName = scan.categoryName + "/" + scan.scanNumberNew;
-            QDir dir(dirName);
-            QStringList const fileList = dir.entryList(spec, QDir::Files | QDir::NoSymLinks);
-
-            qint64 totalSizeThisDir=0;
-            for (int jFile=0; jFile<fileList.size(); jFile++)
-            {
-                QString fileName = dirName + "/" + fileList.at(jFile);
-                QFileInfo checkFile(fileName);
-                if ( remove )
-                {
-                    QFile file(fileName);
-                    bool success = file.remove();
-                    if ( !success )
-                        qInfo() << "failed to remove file" << fileName;
-                    else
-                        totalSizeThisDir += checkFile.size();
-                }
-                else
-                    totalSizeThisDir += checkFile.size();
-            }
-            totalSizeThisCategory += totalSizeThisDir;
-            if ( jType == _scans.size()-1 || (scan.category != _scans.at(jType+1).category) )
-                FUNC_INFO << "total size of DICOMS in" << scan.categoryName << "=" << totalSizeThisCategory/(1024*1024) << "Mb";
-        }
-        totalSizeAll += totalSizeThisCategory;
-    }
-    QString gigabytes; gigabytes.setNum(static_cast<double>(totalSizeAll)/(1024.*1024.*1024.),'g',3);
-    totalSizeAll /= 1024*1024;  // b -> Mb
-    if ( remove )
-        qInfo() << "Removed" << gigabytes << "Gb";
-    else
-        _cleanNII_mc->setText(QString("clean pre-alignment files (mc.nii): disk space = %1 Gb").arg(gigabytes));
-    _cleanNII_mc->setEnabled(totalSizeAll > 0);
-    FUNC_EXIT;
 }
 
 void MainWindow::findRawFiles(bool remove)
 {
-    qint64 totalSizeAll=0;
-
-    for (int jType=0; jType<_scans.size(); jType++)
-    {
-        downloadScan scan = _scans.at(jType);
-        qint64 totalSizeThisCategory=0;
-        if ( scan.existsOnDisk && scan.selectedForCleaning )
-        {
-            QStringList spec;
-            spec.append("raw.nii");
-
-            QString dirName = scan.categoryName + "/" + scan.scanNumberNew;
-            QDir dir(dirName);
-            QStringList const fileList = dir.entryList(spec, QDir::Files | QDir::NoSymLinks);
-
-            qint64 totalSizeThisDir=0;
-            for (int jFile=0; jFile<fileList.size(); jFile++)
-            {
-                QString fileName = dirName + "/" + fileList.at(jFile);
-                QFileInfo checkFile(fileName);
-                if ( remove )
-                {
-                    QFile file(fileName);
-                    bool success = file.remove();
-                    if ( !success )
-                        qInfo() << "failed to remove file" << fileName;
-                    else
-                        totalSizeThisDir += checkFile.size();
-                }
-                else
-                    totalSizeThisDir += checkFile.size();
-            }
-            totalSizeThisCategory += totalSizeThisDir;
-            if ( jType == _scans.size()-1 || (scan.category != _scans.at(jType+1).category) )
-                FUNC_INFO << "total size of DICOMS in" << scan.categoryName << "=" << totalSizeThisCategory/(1024*1024) << "Mb";
-        }
-        totalSizeAll += totalSizeThisCategory;
-    }
-    QString gigabytes; gigabytes.setNum(static_cast<double>(totalSizeAll)/(1024.*1024.*1024.),'g',3);
-    totalSizeAll /= 1024*1024;  // b -> Mb
-    if ( remove )
-        qInfo() << "Removed" << gigabytes << "Gb";
-    else
-        _cleanNII_raw->setText(QString("clean raw.nii: disk space = %1 Gb").arg(gigabytes));
-    _cleanNII_raw->setEnabled(false);
-//    _cleanNII_raw->setEnabled(totalSizeAll > 0);
-    FUNC_EXIT;
 }
 
 void MainWindow::findAllFiles()
