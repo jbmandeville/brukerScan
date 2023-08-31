@@ -71,7 +71,7 @@ void MainWindow::setupScanTypes()
         {
             QListWidgetItem item;
             item.setFlags(Qt::ItemIsEnabled | Qt::ItemIsUserCheckable);
-            item.setCheckState(Qt::Checked);
+//            item.setCheckState(Qt::Checked);
             item.setHidden(false);
             _cleanScanTypeItems.append(item);
         }

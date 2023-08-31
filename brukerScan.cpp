@@ -59,7 +59,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
     QAction *quitAction = mainMenu->addAction(tr("&Quit"));
     // short-cuts and tooltips
-    quitAction->setShortcut(Qt::ControlModifier | Qt::Key_Q);
+    quitAction->setShortcut(Qt::ControlModifier + Qt::Key_Q);
     connect(quitAction, &QAction::triggered, this, &MainWindow::exitApp);
 
     _outputBrowser = new QTextBrowser;
@@ -133,15 +133,27 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     */
 
     loadNotes();
-    QString subjectID = getParameterString("subject","SUBJECT_id");
-    FUNC_INFO << "subjectID" << subjectID;
-    _subjectID->setText(subjectID);
+    _subjectIDSavedAtScanTime = getParameterString("subject","SUBJECT_id");
+    FUNC_INFO << "subjectID" << _subjectIDSavedAtScanTime;
+    _subjectID->setText(_subjectIDSavedAtScanTime);
     scanDirectories();
 //    readSubjectVariables();
 
     restoreGeometry(_savedSettings.imageWindowGeometry);
     _outputBrowser->restoreGeometry(_savedSettings.browserWindowGeometry);
     _helpTool->restoreGeometry(_savedSettings.imageWindowGeometry);
+
+    QDir thisDir = QDir::currentPath();
+    QStringList subDirs = thisDir.absolutePath().split("/");
+    int nList = qMin(2,subDirs.count());
+    QString list;  list.append("[..]/");
+    for (int jList=nList; jList>0; jList--)
+    {
+        list.append(subDirs.at(subDirs.count()-jList));
+        if ( jList != 1 ) list.append("/");
+    }
+    setWindowTitle(QString("%1").arg(list));
+
 }
 
 void MainWindow::helpGoBackward()
@@ -264,6 +276,12 @@ void MainWindow::writeAllNotes()
         return;
     QTextStream out(&file);
 
+    // First write program variables: selected-scans and potential subject-ID
+    out << "selected-scans " << concatenateSelectedScanString() << "\n";
+    if ( _subjectID->text() != _subjectIDSavedAtScanTime )
+        out << "subject-ID " << _subjectID->text() << "\n";
+
+    // Now write tab-specific notes
     for (int jNote=0; jNote<_tabs->count(); jNote++)
     {
         out << "*tab* " << _tabs->tabText(jNote) << "\n";
@@ -271,6 +289,19 @@ void MainWindow::writeAllNotes()
     }
     file.close();
     FUNC_EXIT;
+}
+
+QString MainWindow::concatenateSelectedScanString()
+{
+    QString list;
+    for (int jList=0; jList<_scans.size(); jList++)
+    {
+        scanType scan = _scans.at(jList);
+        QString number = QString("%1 ").arg(scan.scanNumber);
+        if ( scan.selectedAsImportant )
+            list.append(number);
+    }
+    return list;
 }
 
 void MainWindow::loadHelp(int whichTab)
@@ -530,6 +561,7 @@ void MainWindow::scanDirectories()
             FUNC_INFO << "orderList for scan" << jList << "name" << name << "=" << orderList;
             if ( orderList.contains("FG_ECHO") ) thisScan.reorderEchoes = true;
             FUNC_INFO << "visOrder" << visOrder;
+            thisScan.selectedAsImportant = thisScan.dim.z > 3 || thisScan.dim.t > 1;
             _scans.append(thisScan);
         }
     }
@@ -550,6 +582,17 @@ void MainWindow::scanDirectories()
             _scanItems[jList].setCheckState(Qt::Unchecked);
         _scanItems[jList].setHidden(false);
         _scanItemsBox->addItem(&_scanItems[jList]);
+    }
+
+    // select the first important scan
+    for (int jList=0; jList<_scans.size(); jList++)
+    {
+        if ( _scans.at(jList).selectedAsImportant )
+        {
+            FUNC_INFO << "** select scan **" << jList;
+            _scanItems[jList].setSelected(true);
+            break;
+        }
     }
 }
 
@@ -574,7 +617,7 @@ iPoint4D MainWindow::getImageDimensions(QString dirname)
     if ( dim.z == 0 )
     {
         dim.z = nZ;
-        dim.t = nZnT / nZ;
+        dim.t = nZnT / qMax(1,nZ);
     }
     else
         dim.t = nZnT;

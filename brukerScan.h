@@ -36,24 +36,21 @@ private:
 
 //    QString _fastmapProcess     = "/usr/pubsw/packages/jip/bin/Linux-x86_64/FM";
 
-    QString _fastmapProcess     = "/Users/jbm/QtApps/build-FM-Desktop_Qt_5_13_0_clang_64bit-Release/FM.app/Contents/MacOS/FM";
-    QString _scriptDirectory    = "/Users/jbm/unix/script/analyze-fm/";
+    QString _fastmapProcess     = "/usr/pubsw/packages/FASTMAP/current/bin/FM";
+    QString _scriptDirectory    = "/space/deltabp/1/users/public/script/Bruker/";
 
+    QString _subjectIDSavedAtScanTime;
     enum tabPages
     {
         page_scan,
         page_clean
     };
-    struct programVariables
-    {
-        QString subjectID;
-    } _savedToDisk;
     struct scanType
     {
         QString scanNumber;
         QString sequenceName;
         iPoint4D dim={0,0,0,0};  // x,y,z,t
-        bool selectedAsImportant;
+        bool selectedAsImportant=false;
         bool selectedForCleaning;
         bool reorderEchoes=false;
     };
@@ -113,6 +110,7 @@ private:
     int getVisuCoreOrientation(QString fileName);
     iPoint4D getImageDimensions(QString dirname);
     void scanDirectories();
+    QString concatenateSelectedScanString();
 
     void updateCleaningList();
 

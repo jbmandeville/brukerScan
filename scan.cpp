@@ -24,7 +24,7 @@ void MainWindow::createScanPage()
 
     auto *runsLayout = new QVBoxLayout();
     runsLayout->addWidget(_scanItemsBox);
-    auto *runsBox = new QGroupBox("Download data from server");
+    auto *runsBox = new QGroupBox("List of scans (check interesting ones)");
     runsBox->setLayout(runsLayout);
 
     auto *viewLayout = new QVBoxLayout();
