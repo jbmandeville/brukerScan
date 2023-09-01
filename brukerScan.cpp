@@ -361,7 +361,7 @@ void MainWindow::changedPage(int index)
     writeAllNotes();
     loadHelp(index);
 
-    if ( index == page_clean ) updateCleaningList();
+    updateCleaningList();
 }
 
 void MainWindow::writeAllNotes()

@@ -68,7 +68,7 @@ void MainWindow::findDICOMs(bool all, bool remove)
         if ( includeScan )
         {
             QString spec;
-            spec = "MR.*";
+            spec = "MR*";
             QString dirName = scan.scanNumber + "/pdata/1/dicom";
             QDir dir(dirName);
             QStringList const fileList = dir.entryList( {spec}, QDir::Files | QDir::NoSymLinks);
@@ -107,18 +107,18 @@ void MainWindow::findDICOMs(bool all, bool remove)
         if ( all )
         {
             _cleanAllDICOMs->setEnabled(totalSizeAll > 0);
-            if ( Gb < 1. )
-                _cleanAllDICOMs->setText(QString("clean DICOMS: disk space = %1 Gb").arg(GbString));
+            if ( Gb > 1. )
+                _cleanAllDICOMs->setText(QString("clean DICOMS (%1 Gb)").arg(GbString));
             else
-                _cleanAllDICOMs->setText(QString("clean DICOMS: disk space = %1 Mb").arg(MbString));
+                _cleanAllDICOMs->setText(QString("clean DICOMS (%1 Mb").arg(MbString));
         }
         else
         {
             _cleanUnselectedDICOMs->setEnabled(totalSizeAll > 0);
-            if ( Gb < 1. )
-                _cleanUnselectedDICOMs->setText(QString("clean DICOMS: disk space = %1 Gb").arg(GbString));
+            if ( Gb > 1. )
+                _cleanUnselectedDICOMs->setText(QString("clean DICOMS (%1 Gb").arg(GbString));
             else
-                _cleanUnselectedDICOMs->setText(QString("clean DICOMS: disk space = %1 Mb").arg(MbString));
+                _cleanUnselectedDICOMs->setText(QString("clean DICOMS (%1 Mb").arg(MbString));
         }
     }
     FUNC_EXIT;

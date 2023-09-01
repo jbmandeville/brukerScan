@@ -25,7 +25,7 @@ QWidget *MainWindow::createUploadPanel()
     auto *runIDAJava  = new QPushButton("run IDA");
 
     connect(prepareData, SIGNAL(pressed()), this, SLOT(prepareDataForUpload()));
-    connect(runIDAJava,  SIGNAL(pressed()), this, SLOT(runIDAUploader()));
+    connect(runIDAJava,  SIGNAL(pressed()), this, SLOT(runIDUploader()));
 
     auto *locationLayout = new QGridLayout();
     locationLayout->addWidget(dataBaseLabel,0,0);
@@ -52,20 +52,25 @@ void MainWindow::runIDUploader()
     QString exe = _javaExeLocation;
 
     QStringList arguments;
+    arguments.append("-jar");
     arguments.append(_IDAUploaderFile);
 
+    FUNC_INFO << exe << arguments;
     auto *process = new QProcess();
     process->startDetached(exe,arguments);
 }
 
 void MainWindow::prepareDataForUpload()
 {
+    _centralWidget->setEnabled(false);
     // first clean the source directory
     QDir uploadBase(_uploadTempDirectory);
     QStringList subDirList = uploadBase.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+    FUNC_INFO << "subDirList" << subDirList;
     for (int jList=0; jList<subDirList.count(); jList++)
     {
-        QDir subDir(subDirList.at(jList));
+        QDir subDir(_uploadTempDirectory + subDirList.at(jList));
+        FUNC_INFO << "remove old dir" << subDir.absolutePath();
         subDir.removeRecursively();
     }
 
@@ -88,14 +93,18 @@ void MainWindow::prepareDataForUpload()
             // Find the dicoms and copy them to the destination
             QString sourceDir = "./" + scan.scanNumber + "/pdata/1/dicom";
             QDir dicomDir(sourceDir);
-            QStringList const fileList = dicomDir.entryList( {"MR.*"}, QDir::Files | QDir::NoSymLinks);
+            FUNC_INFO << "dicomDir" << dicomDir.absolutePath();
+            QStringList const fileList = dicomDir.entryList( {"MR*"}, QDir::Files | QDir::NoSymLinks);
+            FUNC_INFO << "fileList" << fileList;
             for (int jFile=0; jFile<fileList.size(); jFile++)
             {
                 QString sourceName = sourceDir + "/" + fileList.at(jFile);
                 QString destName = numberedDestintionPath + "/" + fileList.at(jFile);
+                FUNC_INFO << "copy source" << sourceName << "to dest" << destName;
                 QFile sourceFile(sourceName);
                 sourceFile.copy(destName);
             }
         }
     }
+    _centralWidget->setEnabled(true);
 }
