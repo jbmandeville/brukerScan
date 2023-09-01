@@ -129,6 +129,7 @@ void MainWindow::scanDirectories()
             QString fileName = topDir.dirName() + "/" + name + "/method";
             thisScan.sequenceName = getParameterString(fileName,"Method");
             thisScan.sequenceName.remove("Bruker:");
+            thisScan.timeDuration = getTimeDuration(fileName);
             FUNC_INFO << "jList" << jList << "scanNumber" << thisScan.scanNumber << "sequence" << thisScan.sequenceName;
             thisScan.dim = getImageDimensions(name);
             fileName = topDir.dirName() + "/" + name + "/pdata/1/visu_pars";
@@ -155,8 +156,8 @@ void MainWindow::scanDirectories()
     {
         scanType scan = _scans.at(jList);
         QString volumes = "volumes";  if ( scan.dim.t == 1 ) volumes = "volume";
-        QString text = QString("%1 %2 %3x%4x%5 (%6 %7)").arg(scan.scanNumber).arg(scan.sequenceName)
-                .arg(scan.dim.x).arg(scan.dim.y).arg(scan.dim.z).arg(scan.dim.t).arg(volumes);
+        QString text = QString("%1 %2 %3x%4x%5 (%6 %7), %8").arg(scan.scanNumber).arg(scan.sequenceName)
+                .arg(scan.dim.x).arg(scan.dim.y).arg(scan.dim.z).arg(scan.dim.t).arg(volumes).arg(scan.timeDuration);
         _scanItems[jList].setText(text);
         _scanItems[jList].setFlags(Qt::ItemIsEnabled | Qt::ItemIsUserCheckable | Qt::ItemIsSelectable);
         if ( scan.selectedAsImportant )
@@ -248,4 +249,65 @@ int MainWindow::getVisuCoreOrientation(QString fileName)
     infile.close();
     FUNC_EXIT;
     return 0;
+}
+
+QString MainWindow::getTimeDuration(QString fileName)
+{
+    FUNC_ENTER << fileName;
+    QString timeSpan;
+    QFileInfo checkFile(fileName);
+    if ( !(checkFile.exists() && checkFile.isFile()) )
+        return timeSpan;
+
+    QFile infile(fileName);
+    if (!infile.open(QIODevice::ReadOnly | QIODevice::Text))
+        return timeSpan;
+    QTextStream in_stream(&infile);
+
+    QString fullParameterName = "##Owner";
+
+    while (!in_stream.atEnd())
+    {
+        QString line = in_stream.readLine();
+        if ( line.isEmpty() ) continue;
+        FUNC_INFO << "line" << line;
+        QRegularExpression filter("[=]");// match an equal
+        QStringList stringList = line.split(filter);  // clazy:exclude=use-static-qregularexpression
+        QString parameter = stringList.at(0);
+        FUNC_INFO << "stringList" << stringList;
+        FUNC_INFO << "parameter" << parameter;
+        if ( !parameter.compare(fullParameterName,Qt::CaseInsensitive) && stringList.count() == 2)
+        {
+            QString line = in_stream.readLine();
+            QRegularExpression space("[\\s+]");// match an equal
+            QStringList stringList = line.split(space);  // clazy:exclude=use-static-qregularexpression
+            if ( stringList.count() > 2 )
+            {
+                QRegularExpression splitTime("[:.]");// match an equal
+                QStringList timePieces = stringList.at(2).split(splitTime);
+                bool ok;
+                int startHours   = timePieces.at(0).toInt(&ok);
+                int startMinutes = timePieces.at(1).toInt(&ok);
+                int startSeconds = timePieces.at(2).toInt(&ok);
+                QTime startTime = QTime(startHours, startMinutes, startSeconds, 0);
+
+                // get the length of the scan
+                QString lengthScan = getParameterString(fileName,"PVM_ScanTimeStr");
+                QRegularExpression breakUnits("[hms]");// match an equal
+                QStringList lengthPieces = lengthScan.split(breakUnits);
+                int lengthHours   = lengthPieces.at(0).toInt(&ok);
+                int lengthMinutes = lengthPieces.at(1).toInt(&ok);
+                int lengthSeconds = lengthPieces.at(2).toInt(&ok);
+                QTime lengthTime = QTime(lengthHours, lengthMinutes, lengthSeconds, 0);
+                QTime endTime = startTime.addSecs(lengthHours * 60 * 60);
+                endTime = endTime.addSecs(lengthMinutes * 60);
+                endTime = endTime.addSecs(lengthSeconds);
+                timeSpan = QString("@ %1 to %2").arg(startTime.toString()).arg(endTime.toString());
+                break;
+            }
+        }
+    }
+    infile.close();
+    FUNC_EXIT;
+    return timeSpan;
 }

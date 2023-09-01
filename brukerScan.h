@@ -67,6 +67,7 @@ private:
     {
         QString scanNumber;
         QString sequenceName;
+        QString timeDuration;
         iPoint4D dim={0,0,0,0};  // x,y,z,t
         bool selectedAsImportant=false;
         bool reorderEchoes=false;
@@ -128,6 +129,7 @@ private:
     QString getParameterString(QString fileName, QString parameterName);
     int getVisuCoreOrientation(QString fileName);
     iPoint4D getImageDimensions(QString dirname);
+    QString getTimeDuration(QString fileName);
     void scanDirectories();
     QString concatenateSelectedScanString();
 
