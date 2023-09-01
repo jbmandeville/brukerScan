@@ -24,7 +24,8 @@ SOURCES += main.cpp\
         scan.cpp \
         clean.cpp \
         ../util/ImageIO.cpp \
-        ../util/utilio.cpp
+        ../util/utilio.cpp \
+        upload.cpp
 
 HEADERS  += \
     brukerScan.h \

@@ -28,6 +28,18 @@
 
 ////////////////////////////////////////////////////
 
+enum CommandLineParseResult
+{
+    CommandLineOk,
+    CommandLineError,
+    CommandLineHelpRequested
+};
+struct CommandOptions
+{
+    QString startupText;     // help
+    bool spanUpload=false;
+};
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -39,7 +51,13 @@ private:
     QString _fastmapProcess     = "/usr/pubsw/packages/FASTMAP/current/bin/FM";
     QString _scriptDirectory    = "/space/deltabp/1/users/public/script/Bruker/";
 
+    QString _dataBaseDirectory   = "/homes/1/jbm/space2/projects/span2/";
+    QString _uploadTempDirectory = "/space/deltabp/2/users/jbm/projects/upload/";
+    QString _javaExeLocation     = "/homes/1/jbm/space1/dev/java/jdk-16.0.1/bin/java";
+    QString _IDAUploaderFile     = "/space/deltabp/1/users/public/bins/IDA-Uploader-2.0.jar";
+
     QString _subjectIDSavedAtScanTime;
+    QStringList _saveSelectedScans;
     enum tabPages
     {
         page_scan,
@@ -51,7 +69,6 @@ private:
         QString sequenceName;
         iPoint4D dim={0,0,0,0};  // x,y,z,t
         bool selectedAsImportant=false;
-        bool selectedForCleaning;
         bool reorderEchoes=false;
     };
     struct savedSettings
@@ -61,11 +78,15 @@ private:
         QByteArray browserWindowGeometry;
         QByteArray helpWindowGeometry;
     };
+    QVector<scanType> _scans;
+    savedSettings _savedSettings;
+    QSettings _savedQSettings;
+
+    CommandOptions _inputOptions;
+    CommandLineParseResult parseCommandLine(QStringList commandLine);
 
     QWidget *_centralWidget;
     QTabWidget *_tabs;
-    QWidget *_scanPage;
-    QWidget *_cleanPage;
     QStatusBar *_statusBar;
     QVector<QTextEdit *> _noteBox;
     QAction *_showNotesAction;
@@ -80,22 +101,22 @@ private:
     QListWidget *_scanItemsBox;
     QVector<QListWidgetItem> _scanItems;
 
+    // upload page
+    QLineEdit *_dataBaseDir;
+    QLineEdit *_uploadTempDir;
+    QLineEdit *_javaExe;
+    QLineEdit *_IDAUploader;
+
     // clean page
-    QListWidget *_cleanScanTypesBox;
-    QVector<QListWidgetItem> _cleanScanTypeItems;
-    QPushButton *_cleanDICOMs;
-    QPushButton *_cleanNII_auxilliary;  // MR*.nii, test.nii, matchingMRI-rs.nii, matchingMRI-mc.nii
-    QPushButton *_cleanNII_raw;         // raw.nii
+    QPushButton *_cleanUnselectedFIDs;
+    QPushButton *_cleanUnselectedDICOMs;
+    QPushButton *_cleanAllFIDs;
+    QPushButton *_cleanAllDICOMs;
     QLabel *_totalSizeSubDirs;
 
-    // non-GUI variables
-    QVector<scanType> _scans;
-    savedSettings _savedSettings;
-    QSettings _savedQSettings;
-
-    void createScanPage();
-    void createCleanPage();
-    void openedCleanPage();
+    QWidget *createScanPanel();
+    QWidget *createUploadPanel();
+    QWidget *createCleanPanel();
     void readQSettings();
     void writeQSettings();
     QString readFileTextArgument(QString fileName, QString parameterName);
@@ -105,7 +126,6 @@ private:
     void loadNotes();
     void loadHelp(int whichTab);
     int whichTabName(QString name);
-    void setupScanTypes();
     QString getParameterString(QString fileName, QString parameterName);
     int getVisuCoreOrientation(QString fileName);
     iPoint4D getImageDimensions(QString dirname);
@@ -114,47 +134,15 @@ private:
 
     void updateCleaningList();
 
-    QString getDimensions(QString fileName, iPoint4D &dim);
-    QString twoDigits(short time);
-    void writeJipCommandFileForMatchingMRI();
-
-    QString alignCOMFileName(int which);
-
-    inline void spawnProcess(QProcess *process, QString exe, QStringList arguments,
-                             QString message, QString browserTitle )
-    {
-        _statusBar->showMessage(message);
-        _centralWidget->setEnabled(false);
-        if ( !browserTitle.isEmpty() )
-        {
-            _outputBrowser->setWindowTitle("Query Progress");
-            _outputBrowser->show();
-        }
-        qInfo() <<  exe << arguments;
-        process->start(exe,arguments);
-    }
-
-    inline void finishedProcess()
-    {
-        _statusBar->clearMessage();
-        showOutputBrowser(false);
-        _centralWidget->setEnabled(true);
-    }
-
-    void findDICOMs(bool remove);
-    void findAuxFiles(bool remove);
-    void findRawFiles(bool remove);
+    void findFIDs(bool all, bool remove);
+    void findDICOMs(bool all, bool remove);
     void findAllFiles();
 
 public:
     MainWindow(QWidget *parent = 0);
     ~MainWindow();
+    void readCommandLine();
 private slots:
-    inline void enableGUI(int exitCode, QProcess::ExitStatus exitStatus )
-    {
-        qInfo() << "finished";
-        finishedProcess();
-    }
     inline void outputToBrowser()
     {
         QProcess *process = qobject_cast<QProcess*>(sender());
@@ -179,18 +167,25 @@ private slots:
     void helpGoForward();
     void viewScanUsingFastMap();
     void displayFM(int iScan);
-
     void changedSelectScanCheckBox(QListWidgetItem *item);
+
+    void prepareDataForUpload();
+    void runIDUploader();
 
     void aboutApp();
     void exitApp();
     void changedPage(int index);
     void writeSubjectVariables();
 
-    void changedScanTypeCheckBox(QListWidgetItem *item);
-    inline void cleanDICOMFiles()     {findDICOMs(true);         findDICOMs(false);         findAllFiles();}
-    inline void cleanAuxNIIFiles()    {findAuxFiles(true);       findAuxFiles(false);       findAllFiles();}
-    inline void cleanRawNIIFiles()    {findRawFiles(true);       findRawFiles(false);       findAllFiles();}
+    inline void cleanUnselelectedFIDs() {findFIDs(false, true);
+                                         findFIDs(false, false); findFIDs(true, false); findAllFiles();}
+    inline void cleanAllFIDs()          {findFIDs(true, true);
+                                         findFIDs(false, false); findFIDs(true, false); findAllFiles();}
+
+    inline void cleanUnselelectedDICOMs() {findDICOMs(false, true);
+                                           findDICOMs(false, false); findDICOMs(true, false); findAllFiles();}
+    inline void cleanAllDICOMs()          {findDICOMs(true, true);
+                                           findDICOMs(false, false); findDICOMs(true, false); findAllFiles();}
 
 };
 

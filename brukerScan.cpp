@@ -1,6 +1,54 @@
 #include <QtWidgets>
-#include "ImageIO.h"
 #include "brukerScan.h"
+
+void MainWindow::readCommandLine()
+{
+    QStringList commandLine = QCoreApplication::arguments();
+
+    switch (parseCommandLine(commandLine))
+    {
+    case CommandLineOk:
+        break;
+    case CommandLineError:
+        exit(1);
+    case CommandLineHelpRequested:
+        QCoreApplication::exit(0);
+    }
+}
+
+CommandLineParseResult MainWindow::parseCommandLine(QStringList commandLine)
+{
+    FUNC_ENTER << commandLine;
+    QCommandLineParser parser;
+    QString HelpText = "\nCalculate Ki values for several ROIs using table files.\n";
+    HelpText.append("Syntax:  exe [Variable-TR table] [short-TE table] [long TE-table] [optional args]\n\n");
+    HelpText.append("where\n\n");
+    HelpText.append("tables have 1 header line (x lesion contra sinus) followed by time points");
+    parser.setApplicationDescription(HelpText);
+
+    parser.setSingleDashWordOptionMode(QCommandLineParser::ParseAsLongOptions);
+
+    const QCommandLineOption helpOption = parser.addHelpOption();
+    const QCommandLineOption spanOption({"s","span"}, "add SPAN upload page");
+    parser.addOption(spanOption);  // should add auto-calculate and auto-quit by default
+
+    bool success = parser.parse(commandLine);
+    if ( !success || parser.isSet(helpOption))
+        QTextStream(stdout) << parser.helpText();
+    if ( !success ) return CommandLineError;
+
+    // parsing is done at this point
+    if ( parser.isSet(spanOption) ) _inputOptions.spanUpload = true;
+
+    FUNC_INFO << "span is set??" << _inputOptions.spanUpload;
+
+    int numberArguments = commandLine.count();
+    if ( numberArguments > 2 )   // executable [--span]
+        return CommandLineError;
+    _inputOptions.startupText = parser.helpText();
+
+    return CommandLineOk;
+}
 
 MainWindow::~MainWindow()
 {
@@ -8,6 +56,7 @@ MainWindow::~MainWindow()
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
+    FUNC_ENTER;
     QCoreApplication::setOrganizationName("Martinos");
     QCoreApplication::setOrganizationDomain("http://www.nmr.mgh.harvard.edu");
     QCoreApplication::setApplicationVersion("3.0");
@@ -20,31 +69,80 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     QCoreApplication::setApplicationName("MRIProcess");
 
     readQSettings();
+    readCommandLine();
 
+    FUNC_INFO << "create subject";
+    auto *queryLayout = new QGridLayout();
+    auto *subjectIDLabel = new QLabel("Subject ID");
+    _subjectID = new QLineEdit("?");
+    _subjectID->setFocusPolicy(Qt::ClickFocus);
+    queryLayout->addWidget(subjectIDLabel,0,0);
+    queryLayout->addWidget(_subjectID,0,1);
+
+    auto *subjectGroupBox = new QGroupBox("Subject information");
+    subjectGroupBox->setLayout(queryLayout);
+
+    FUNC_INFO << "create tabs";
+    int iPanel=0;
     _tabs = new QTabWidget();
-    createScanPage();
-    createCleanPage();
-    _tabs->addTab(_scanPage,  tr("scans"));
-    _tabs->addTab(_cleanPage, tr("cleanup"));
-    _tabs->setTabToolTip(0,"Query scan directories");
+    auto *scanPanel   = createScanPanel();
+    _tabs->addTab(scanPanel,  tr("scans"));
+    _tabs->setTabToolTip(iPanel++,"Query scan directories");
+
+    if ( _inputOptions.spanUpload )
+    {
+        FUNC_INFO << "create upload panel";
+        auto *uploadPanel = createUploadPanel();
+        _tabs->addTab(uploadPanel, tr("upload"));
+        _tabs->setTabToolTip(iPanel++,"Upload DICOMs to SPAN (LONI) database");
+    }
+
+    auto *cleanPanel  = createCleanPanel();
+    _tabs->addTab(cleanPanel, tr("cleanup"));
+    _tabs->setTabToolTip(iPanel++,"Clean (remove) unnessary files to save space");
+
     connect(_tabs, SIGNAL(currentChanged(int)), this, SLOT(changedPage(int)));
 
+    _scanItemsBox = new QListWidget();
+    _scanItemsBox->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::MinimumExpanding);
+    _scanItemsBox->setSizeAdjustPolicy(QAbstractScrollArea::AdjustToContents);
+    _scanItemsBox->setSelectionMode(QAbstractItemView::SingleSelection);
+    connect(_scanItemsBox, SIGNAL(itemClicked(QListWidgetItem*)),this, SLOT(changedSelectScanCheckBox(QListWidgetItem*)));
+
+    auto *scansLayout = new QVBoxLayout();
+    scansLayout->addWidget(_scanItemsBox);
+    auto *scansBox = new QGroupBox("List of scans (check interesting ones)");
+    scansBox->setLayout(scansLayout);
+
+    FUNC_INFO << "create mainLayout";
     _centralWidget = new QWidget(this);
     this->setCentralWidget( _centralWidget );
     auto *mainLayout = new QVBoxLayout( _centralWidget );
+    mainLayout->addWidget(subjectGroupBox);
     mainLayout->addWidget(_tabs);
+    mainLayout->addWidget(scansBox);
+    FUNC_INFO << 1;
     _noteBox.resize(_tabs->count());
     for (int jNote=0; jNote<_tabs->count(); jNote++)
     {
+        FUNC_INFO << "jNote" << jNote;
         _noteBox[jNote] = new QTextEdit("");
         _noteBox[jNote]->setMaximumHeight(250);
         _noteBox[jNote]->setVisible(false);
         mainLayout->addWidget(_noteBox[jNote]);
     }
 
+    FUNC_INFO << "status bar";
     _statusBar = this->statusBar();
     _statusBar->setStyleSheet("color:Darkred");
     mainLayout->addWidget(_statusBar);
+    FUNC_INFO << "last stretch" << mainLayout->count()-1;
+    mainLayout->setStretch(0,1);        // subject box
+    mainLayout->setStretch(1,2);        // top panel (page-specific)
+    mainLayout->setStretch(2,20);       // scans
+    mainLayout->setStretch(3,1);        // note 1
+    mainLayout->setStretch(4,1);        // note 2
+    mainLayout->setStretch(5,1);        // status bar
 
     // add a menu
     auto *menuBar = new QMenuBar;
@@ -111,8 +209,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     _showNotesAction = new QAction("Notes",this);
     _showNotesAction->setToolTip("Show or hide the Notes");
     _showNotesAction->setCheckable(true);
-    _showNotesAction->setChecked(false);
     connect(_showNotesAction, SIGNAL(toggled(bool)), this, SLOT(showNotes(bool)));
+    _showNotesAction->setChecked(true);
 
     QToolBar *sideToolBar = addToolBar(tr("tool bar"));
     sideToolBar->setIconSize(iconSizeSmall);
@@ -263,8 +361,7 @@ void MainWindow::changedPage(int index)
     writeAllNotes();
     loadHelp(index);
 
-    if ( index == page_clean )
-        openedCleanPage();
+    if ( index == page_clean ) updateCleaningList();
 }
 
 void MainWindow::writeAllNotes()
@@ -349,14 +446,22 @@ void MainWindow::loadNotes()
     QTextStream in_stream(&inFile);
     QRegularExpression whiteSpaceComma("[,\\s]");// match a comma or a space
 
-    // find the 1st tab
+    // find the 1st tab; also, read parameters
     QStringList stringList;
+    _saveSelectedScans.clear();
     bool newTab = false;
     while ( !in_stream.atEnd() && !newTab )
     {
         QString line = in_stream.readLine();
         FUNC_INFO << "line" << line;
         stringList = line.split(whiteSpaceComma, Qt::SkipEmptyParts);
+        QString keyword = stringList.at(0);
+        if ( !keyword.compare("selected-scans") )
+        {
+            for (int jList=1; jList<stringList.count(); jList++)
+                _saveSelectedScans.append(stringList.at(jList));
+        }
+
         FUNC_INFO << stringList;
         newTab = stringList.count() > 1 && !stringList.at(0).compare("*tab*");
         FUNC_INFO << "newTab" << newTab;
@@ -385,6 +490,7 @@ void MainWindow::loadNotes()
         else if ( whichTab >= 0 )
         {
             FUNC_INFO << "assign:" << whichTab << notesString;
+            if ( notesString.isEmpty() ) notesString = "Notes: ";
             _noteBox[whichTab]->setText(notesString);
             notesString.clear();
             whichTab = whichTabName(stringList.at(1));
@@ -446,224 +552,4 @@ void MainWindow::writeQSettings()
     _savedQSettings.setValue("imageWindowGeometry",saveGeometry());
 
     _savedQSettings.sync();
-}
-
-QString MainWindow::getDimensions(QString fileName, iPoint4D &dim)
-{
-    QFileInfo checkFile(fileName);
-    if ( checkFile.exists() && checkFile.isFile() )
-    {
-        ImageIO file;
-        if ( !file.readFileHeader(fileName,false) )
-        {
-            dim = file.getDimensions();
-            dPoint4D res = file.getResolution();
-            double duration = dim.t * res.t / 60.;
-            QString text = QString("%1 x %2 x %3 with %4 time points (%5 min)")
-                    .arg(dim.x).arg(dim.y).arg(dim.z).arg(dim.t).arg(duration);
-            return text;
-        }
-        else
-        {
-            dim={0,0,0,0};
-            return "";
-        }
-    }
-    else
-    {
-        dim={0,0,0,0};
-        return "";
-    }
-}
-
-QString MainWindow::twoDigits(short time)
-{
-    QString text;
-    if ( time < 10 )
-        text = QString("0%1").arg(time);
-    else
-        text = QString("%1").arg(time);
-    return text;
-}
-
-QString MainWindow::getParameterString(QString fileName, QString parameterName)
-{
-    qInfo() << "\n\n";
-    FUNC_ENTER << fileName << parameterName;
-    QFileInfo checkFile(fileName);
-    if ( !(checkFile.exists() && checkFile.isFile()) )
-        return "";
-
-    QFile infile(fileName);
-    if (!infile.open(QIODevice::ReadOnly | QIODevice::Text))
-        return "";
-    QTextStream in_stream(&infile);
-
-    QString fullParameterName = "##$" + parameterName;
-    FUNC_INFO << "fullParameterName" << fullParameterName;
-
-    while (!in_stream.atEnd())
-    {
-        QString line = in_stream.readLine();
-        if ( line.isEmpty() ) continue;
-        FUNC_INFO << "line" << line;
-        QRegularExpression filter("[=,]");// match a comma or a space
-        QStringList stringList = line.split(filter);  // clazy:exclude=use-static-qregularexpression
-        QString parameter = stringList.at(0);
-        FUNC_INFO << "stringList" << stringList;
-        FUNC_INFO << "parameter" << parameter;
-        if ( !parameter.compare(fullParameterName,Qt::CaseInsensitive) && stringList.count() == 2)
-        {
-            QString parName = stringList.at(1);
-            if ( parName.contains("(") ) // the value is on the next line
-                parName = in_stream.readLine();
-            parName.remove('<'); parName.remove('>'); parName.remove('('); parName.remove(')');
-            return parName;
-        }
-    }
-    infile.close();
-    FUNC_EXIT;
-    return "";
-}
-
-void MainWindow::scanDirectories()
-{
-    FUNC_ENTER;
-
-    QDir const topDir("./");
-    QStringList const folderList = topDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
-    FUNC_INFO << folderList;
-
-    _scans.clear();
-    for (int jList=0; jList<folderList.size(); jList++)
-    {
-        QDir scanDir(folderList.at(jList));
-        scanDir.setNameFilters(QStringList()<<"fid");
-        QStringList fileList = scanDir.entryList();
-        if ( fileList.count() == 1 )
-        {
-            QString name = folderList.at(jList);
-            int scanNumber = name.toInt();
-            scanType thisScan;
-            thisScan.scanNumber = QString("%1").arg(scanNumber);
-            QString fileName = topDir.dirName() + "/" + name + "/method";
-            thisScan.sequenceName = getParameterString(fileName,"Method");
-            thisScan.sequenceName.remove("Bruker:");
-            FUNC_INFO << "jList" << jList << "scanNumber" << thisScan.scanNumber << "sequence" << thisScan.sequenceName;
-            thisScan.dim = getImageDimensions(name);
-            fileName = topDir.dirName() + "/" + name + "/pdata/1/visu_pars";
-            QString visCorSize = getParameterString(fileName,"VisuCoreSize");
-            FUNC_INFO << "visCorSize" << visCorSize;
-
-            QString visOrder = getParameterString(fileName,"VisuFGOrderDesc");
-            QRegularExpression comma("[,\\s]");// match a comma
-            QStringList orderList = visOrder.split(comma);
-            FUNC_INFO << "orderList for scan" << jList << "name" << name << "=" << orderList;
-            if ( orderList.contains("FG_ECHO") ) thisScan.reorderEchoes = true;
-            FUNC_INFO << "visOrder" << visOrder;
-            thisScan.selectedAsImportant = thisScan.dim.z > 3 || thisScan.dim.t > 1;
-            _scans.append(thisScan);
-        }
-    }
-
-    // add scans to the table
-    _scanItems.resize(_scans.size());
-    for (int jList=0; jList<_scans.size(); jList++)
-    {
-        scanType scan = _scans.at(jList);
-        QString volumes = "volumes";  if ( scan.dim.t == 1 ) volumes = "volume";
-        QString text = QString("%1 %2 %3x%4x%5 (%6 %7)").arg(scan.scanNumber).arg(scan.sequenceName)
-                .arg(scan.dim.x).arg(scan.dim.y).arg(scan.dim.z).arg(scan.dim.t).arg(volumes);
-        _scanItems[jList].setText(text);
-        _scanItems[jList].setFlags(Qt::ItemIsEnabled | Qt::ItemIsUserCheckable | Qt::ItemIsSelectable);
-        if ( scan.selectedAsImportant )
-            _scanItems[jList].setCheckState(Qt::Checked);
-        else
-            _scanItems[jList].setCheckState(Qt::Unchecked);
-        _scanItems[jList].setHidden(false);
-        _scanItemsBox->addItem(&_scanItems[jList]);
-    }
-
-    // select the first important scan
-    for (int jList=0; jList<_scans.size(); jList++)
-    {
-        if ( _scans.at(jList).selectedAsImportant )
-        {
-            FUNC_INFO << "** select scan **" << jList;
-            _scanItems[jList].setSelected(true);
-            break;
-        }
-    }
-}
-
-iPoint4D MainWindow::getImageDimensions(QString dirname)
-{
-    iPoint4D dim={0,0,0,0};
-    QString visuParsName = dirname + "/pdata/1/visu_pars";
-    QString visCorSize = getParameterString(visuParsName,"VisuCoreSize");
-    QRegularExpression filter("[\\s]");// match a space
-    QStringList list = visCorSize.split(filter);
-    bool ok;
-    if ( list.count() > 0 )
-        dim.x = list.at(0).toInt(&ok);
-    if ( list.count() > 1 )
-        dim.y = list.at(1).toInt(&ok);
-    if ( list.count() > 2 )
-        dim.z = list.at(2).toInt(&ok);
-    QString visCorFrameCount = getParameterString(visuParsName,"VisuCoreFrameCount");
-    int nZnT = visCorFrameCount.toInt(&ok);
-    int nZ = getVisuCoreOrientation(visuParsName);
-    FUNC_INFO << "nZnT" << nZnT << "nZ" << nZ;
-    if ( dim.z == 0 )
-    {
-        dim.z = nZ;
-        dim.t = nZnT / qMax(1,nZ);
-    }
-    else
-        dim.t = nZnT;
-    return dim;
-}
-
-int MainWindow::getVisuCoreOrientation(QString fileName)
-{
-    qInfo() << "\n\n";
-    FUNC_ENTER << fileName;
-    QFileInfo checkFile(fileName);
-    if ( !(checkFile.exists() && checkFile.isFile()) )
-        return 0;
-
-    QFile infile(fileName);
-    if (!infile.open(QIODevice::ReadOnly | QIODevice::Text))
-        return 0;
-    QTextStream in_stream(&infile);
-
-    QString fullParameterName = "##$VisuCoreOrientation";
-
-    while (!in_stream.atEnd())
-    {
-        QString line = in_stream.readLine();
-        if ( line.isEmpty() ) continue;
-        FUNC_INFO << "line" << line;
-        QRegularExpression filter("[=]");// match a comma or a space
-        QStringList stringList = line.split(filter);  // clazy:exclude=use-static-qregularexpression
-        QString parameter = stringList.at(0);
-        FUNC_INFO << "stringList" << stringList;
-        FUNC_INFO << "parameter" << parameter;
-        if ( !parameter.compare(fullParameterName,Qt::CaseInsensitive) && stringList.count() == 2)
-        {
-            QString parName = stringList.at(1);
-            if ( parName.contains("(") ) // this should always be the case
-            {
-                QRegularExpression newFilter("[,]");// match a comma or a space
-                QStringList newList = parName.split(newFilter);  // clazy:exclude=use-static-qregularexpression
-                FUNC_INFO << "newList" << newList;
-                parName = newList.at(0);  parName.remove("(");
-                bool ok;  int nFrames = parName.toInt(&ok);
-                return nFrames;
-            }
-        }
-    }
-    infile.close();
-    FUNC_EXIT;
-    return 0;
 }
