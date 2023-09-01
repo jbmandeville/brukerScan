@@ -151,6 +151,7 @@ void MainWindow::scanDirectories()
     }
 
     // add scans to the table
+    _scanItems.clear();
     _scanItems.resize(_scans.size());
     for (int jList=0; jList<_scans.size(); jList++)
     {
