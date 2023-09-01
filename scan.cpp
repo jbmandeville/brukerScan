@@ -69,7 +69,6 @@ void MainWindow::displayFM(int iScan)
 
 QString MainWindow::getParameterString(QString fileName, QString parameterName)
 {
-    qInfo() << "\n\n";
     FUNC_ENTER << fileName << parameterName;
     QFileInfo checkFile(fileName);
     if ( !(checkFile.exists() && checkFile.isFile()) )
@@ -210,7 +209,6 @@ iPoint4D MainWindow::getImageDimensions(QString dirname)
 
 int MainWindow::getVisuCoreOrientation(QString fileName)
 {
-    qInfo() << "\n\n";
     FUNC_ENTER << fileName;
     QFileInfo checkFile(fileName);
     if ( !(checkFile.exists() && checkFile.isFile()) )
