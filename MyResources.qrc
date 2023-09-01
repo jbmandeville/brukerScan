@@ -4,5 +4,7 @@
         <file>My-Icons/fileCabinet.png</file>
         <file>My-Text/help-clean</file>
         <file>My-Text/help-scan</file>
+        <file>My-Icons/openFile.png</file>
+        <file>My-Icons/editundo.png</file>
     </qresource>
 </RCC>

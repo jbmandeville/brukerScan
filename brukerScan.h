@@ -91,7 +91,6 @@ private:
     QVector<QTextEdit *> _noteBox;
     QAction *_showNotesAction;
 
-    QTextBrowser *_outputBrowser;
     QWidget *_helpTool;
     QTextBrowser *_helpBrowser;
     int _helpPageIndex=0;
@@ -143,16 +142,6 @@ public:
     ~MainWindow();
     void readCommandLine();
 private slots:
-    inline void outputToBrowser()
-    {
-        QProcess *process = qobject_cast<QProcess*>(sender());
-        _outputBrowser->append(process->readAllStandardOutput());
-    }
-    inline void showOutputBrowser(bool show)
-    {
-        if ( show ) _outputBrowser->show();
-        else        _outputBrowser->hide();
-    }
     inline void showHelpBrowser(bool show)
     {
         FUNC_ENTER << show;
@@ -168,6 +157,8 @@ private slots:
     void viewScanUsingFastMap();
     void displayFM(int iScan);
     void changedSelectScanCheckBox(QListWidgetItem *item);
+    void openNewSubject();
+    void updateStudy();
 
     void prepareDataForUpload();
     void runIDUploader();

@@ -72,12 +72,27 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     readCommandLine();
 
     FUNC_INFO << "create subject";
-    auto *queryLayout = new QGridLayout();
     auto *subjectIDLabel = new QLabel("Subject ID");
     _subjectID = new QLineEdit("?");
     _subjectID->setFocusPolicy(Qt::ClickFocus);
+
+    auto *openDirectory = new QPushButton("open subject");
+    QPixmap pixmapSave(":/My-Icons/openFile.png");
+    QIcon openIcon(pixmapSave);
+    openDirectory->setIcon(openIcon);
+    connect(openDirectory, SIGNAL(clicked()), this, SLOT(openNewSubject()));
+
+    auto *refreshSubject = new QPushButton("refresh");
+    QPixmap pixmapRefresh(":/My-Icons/editundo.png");
+    QIcon refreshIcon(pixmapRefresh);
+    refreshSubject->setIcon(refreshIcon);
+    connect(refreshSubject, SIGNAL(clicked()), this, SLOT(updateStudy()));
+
+    auto *queryLayout = new QGridLayout();
     queryLayout->addWidget(subjectIDLabel,0,0);
     queryLayout->addWidget(_subjectID,0,1);
+    queryLayout->addWidget(refreshSubject,0,2);
+    queryLayout->addWidget(openDirectory,0,3);
 
     auto *subjectGroupBox = new QGroupBox("Subject information");
     subjectGroupBox->setLayout(queryLayout);
@@ -160,7 +175,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     quitAction->setShortcut(Qt::ControlModifier + Qt::Key_Q);
     connect(quitAction, &QAction::triggered, this, &MainWindow::exitApp);
 
-    _outputBrowser = new QTextBrowser;
     _helpBrowser   = new QTextBrowser;
     _helpBrowser->setOpenLinks(true);
     _helpBrowser->setOpenExternalLinks(true);
@@ -168,15 +182,14 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     auto *buttonLayout = new QHBoxLayout();
     auto *helpForward  = new QPushButton(">>");
     auto *helpBackward = new QPushButton("<<");
+    auto *helpDismiss  = new QPushButton("Dismiss");
     buttonLayout->addWidget(helpBackward);
+    buttonLayout->addWidget(helpDismiss);
     buttonLayout->addWidget(helpForward);
     auto *layout   = new QVBoxLayout();
     layout->addLayout(buttonLayout);
     layout->addWidget(_helpBrowser);
     _helpTool->setLayout(layout);
-
-    connect(helpBackward, SIGNAL(clicked()), this, SLOT(helpGoBackward()));
-    connect(helpForward,  SIGNAL(clicked()), this, SLOT(helpGoForward()));
 
     auto *helpBrowserAction = new QAction("HELP",this);
     helpBrowserAction->setCheckable(true);
@@ -184,13 +197,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     connect(helpBrowserAction, SIGNAL(toggled(bool)), this, SLOT(showHelpBrowser(bool)));
     helpBrowserAction->setToolTip("Show or hide the help window");
 
-    QSize iconSizeSmall(24,24);
-    const QIcon *showOutputBrowser = new QIcon(":/My-Icons/textOutput.png");
-    auto *outputBrowserAction = new QAction(*showOutputBrowser,"browser",this);
-    outputBrowserAction->setCheckable(true);
-    outputBrowserAction->setChecked(false);
-    connect(outputBrowserAction, SIGNAL(toggled(bool)), this, SLOT(showOutputBrowser(bool)));
-    outputBrowserAction->setToolTip("Show or hide the process output window");
+    connect(helpBackward, SIGNAL(clicked()), this, SLOT(helpGoBackward()));
+    connect(helpForward,  SIGNAL(clicked()), this, SLOT(helpGoForward()));
+    connect(helpDismiss,  SIGNAL(clicked()), helpBrowserAction, SLOT(trigger()));
+    loadHelp(_helpPageIndex);
 
     QWidget* spacer = new QWidget();
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -212,9 +222,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     connect(_showNotesAction, SIGNAL(toggled(bool)), this, SLOT(showNotes(bool)));
     _showNotesAction->setChecked(true);
 
+    QSize iconSizeSmall(24,24);
     QToolBar *sideToolBar = addToolBar(tr("tool bar"));
     sideToolBar->setIconSize(iconSizeSmall);
-    sideToolBar->addAction(outputBrowserAction);
     sideToolBar->addAction(helpBrowserAction);
     sideToolBar->addWidget(spacer);
     sideToolBar->addAction(_showNotesAction);
@@ -223,24 +233,27 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
     /*
     QSize defaultWindowSize;
-    QRect rec = QApplication::desktop()->screenGeometry();
-    defaultWindowSize.setWidth(rec.width()/4);
+    QScreen* screen = QGuiApplication::primaryScreen();
+    QRect rec = screen->availableGeometry();
+    defaultWindowSize.setWidth(rec.width()/2);
     defaultWindowSize.setHeight(rec.height()/2);
-    resize(defaultWindowSize);
-    _outputBrowser->resize(defaultWindowSize);
     */
 
-    loadNotes();
-    _subjectIDSavedAtScanTime = getParameterString("subject","SUBJECT_id");
-    FUNC_INFO << "subjectID" << _subjectIDSavedAtScanTime;
-    _subjectID->setText(_subjectIDSavedAtScanTime);
-    scanDirectories();
-//    readSubjectVariables();
-
     restoreGeometry(_savedSettings.imageWindowGeometry);
-    _outputBrowser->restoreGeometry(_savedSettings.browserWindowGeometry);
     _helpTool->restoreGeometry(_savedSettings.imageWindowGeometry);
 
+    updateStudy();
+}
+
+void MainWindow::updateStudy()
+{
+    // read notes, subject file, and scan directories
+    loadNotes();
+    _subjectIDSavedAtScanTime = getParameterString("subject","SUBJECT_id");
+    _subjectID->setText(_subjectIDSavedAtScanTime);
+    scanDirectories();
+
+    // update window title
     QDir thisDir = QDir::currentPath();
     QStringList subDirs = thisDir.absolutePath().split("/");
     int nList = qMin(2,subDirs.count());
@@ -251,8 +264,28 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
         if ( jList != 1 ) list.append("/");
     }
     setWindowTitle(QString("%1").arg(list));
-
 }
+
+void MainWindow::openNewSubject()
+{
+    QString message;
+    message = "Select a Bruker scan directory";
+    _statusBar->showMessage(message,20000);
+
+    QFileDialog fileDialog;
+    fileDialog.setHidden(true);
+    QString startingPath = QDir::currentPath() + "/..";
+    FUNC_INFO << "startingPath" << startingPath;
+    QString dirName = fileDialog.getExistingDirectory(this,
+                                                      "Select existing directory",
+                                                      startingPath,
+                                                      QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+    FUNC_INFO << "dirName" << dirName;
+    if ( dirName.isEmpty() ) return;
+    QDir::setCurrent(dirName);
+    updateStudy();
+}
+
 
 void MainWindow::helpGoBackward()
 {
