@@ -255,7 +255,6 @@ void MainWindow::updateStudy()
 
     // update window title
     QDir thisDir = QDir::currentPath();
-    qInfo() << "current dir" << QDir::currentPath();
     QStringList subDirs = thisDir.absolutePath().split("/");
     int nList = qMin(2,subDirs.count());
     QString list;  list.append("[..]/");
