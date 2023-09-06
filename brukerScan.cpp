@@ -121,14 +121,13 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
     connect(_tabs, SIGNAL(currentChanged(int)), this, SLOT(changedPage(int)));
 
-    _scanItemsBox = new QListWidget();
-    _scanItemsBox->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::MinimumExpanding);
-    _scanItemsBox->setSizeAdjustPolicy(QAbstractScrollArea::AdjustToContents);
-    _scanItemsBox->setSelectionMode(QAbstractItemView::SingleSelection);
-    connect(_scanItemsBox, SIGNAL(itemClicked(QListWidgetItem*)),this, SLOT(changedSelectScanCheckBox(QListWidgetItem*)));
+    _scanTable = new QTableWidget(this);
+    _scanTable->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::MinimumExpanding);
+    _scanTable->setSizeAdjustPolicy(QAbstractScrollArea::AdjustToContents);
+    connect( _scanTable, SIGNAL(cellClicked(int,int)), this, SLOT(changedHighlightScan(int,int)));
 
     auto *scansLayout = new QVBoxLayout();
-    scansLayout->addWidget(_scanItemsBox);
+    scansLayout->addWidget(_scanTable);
     auto *scansBox = new QGroupBox("List of scans (check interesting ones)");
     scansBox->setLayout(scansLayout);
 

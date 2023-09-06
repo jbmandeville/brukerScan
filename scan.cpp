@@ -21,27 +21,21 @@ QWidget *MainWindow::createScanPanel()
 
     return scanPanel;
 }
-
-void MainWindow::changedSelectScanCheckBox(QListWidgetItem *item)
+void MainWindow::changedHighlightScan(int row, int column)
 {
-    FUNC_ENTER;
-    int iSelected=-1;
-    for ( int jItem=0; jItem<_scanItems.size(); jItem++)
-    {
-        if ( item == &_scanItems.at(jItem) )
-            iSelected = jItem;
-    }
-    _scans[iSelected].selectedAsImportant = _scanItems[iSelected].checkState();
+    FUNC_ENTER << row << column;
+    _scanTable->selectRow(row);
 }
 
 void MainWindow::viewScanUsingFastMap()
 {
     FUNC_ENTER;
     int iSelect = -1;
-    for (int jList=0; jList<_scans.size(); jList++)
+    for (int jScan=0; jScan<_scans.size(); jScan++)
     {
-        if ( _scanItems[jList].isSelected() )
-            iSelect = jList;
+        auto *item = _scanTable->item(jScan,0);
+        if ( item->isSelected() )
+            iSelect = jScan;
     }
     FUNC_INFO << "iSelect" << iSelect;
     if ( iSelect > 0 )
@@ -116,22 +110,24 @@ void MainWindow::scanDirectories()
 
     _scans.clear();
     _saveSelectedScans.clear();
-    for (int jList=0; jList<folderList.size(); jList++)
+    for (int jScan=0; jScan<folderList.size(); jScan++)
     {
-        QDir scanDir(folderList.at(jList));
+        QDir scanDir(folderList.at(jScan));
         scanDir.setNameFilters(QStringList()<<"fid");
         QStringList fileList = scanDir.entryList();
         if ( fileList.count() == 1 )
         {
-            QString name = folderList.at(jList);
+            QString name = folderList.at(jScan);
             int scanNumber = name.toInt();
             scanType thisScan;
             thisScan.scanNumber = QString("%1").arg(scanNumber);
             QString fileName = topDir.dirName() + "/" + name + "/method";
             thisScan.sequenceName = getParameterString(fileName,"Method");
             thisScan.sequenceName.remove("Bruker:");
-            thisScan.timeDuration = getTimeDuration(fileName);
-            FUNC_INFO << "jList" << jList << "scanNumber" << thisScan.scanNumber << "sequence" << thisScan.sequenceName;
+            QStringList sequenceTimes = getSequenceTimes(fileName);
+            thisScan.timeStart = sequenceTimes.at(0);
+            thisScan.timeEnd   = sequenceTimes.at(1);
+            FUNC_INFO << "jScan" << jScan << "scanNumber" << thisScan.scanNumber << "sequence" << thisScan.sequenceName;
             thisScan.dim = getImageDimensions(name);
             fileName = topDir.dirName() + "/" + name + "/pdata/1/visu_pars";
             QString visCorSize = getParameterString(fileName,"VisuCoreSize");
@@ -140,7 +136,7 @@ void MainWindow::scanDirectories()
             QString visOrder = getParameterString(fileName,"VisuFGOrderDesc");
             QRegularExpression comma("[,\\s]");// match a comma
             QStringList orderList = visOrder.split(comma);
-            FUNC_INFO << "orderList for scan" << jList << "name" << name << "=" << orderList;
+            FUNC_INFO << "orderList for scan" << jScan << "name" << name << "=" << orderList;
             if ( orderList.contains("FG_ECHO") ) thisScan.reorderEchoes = true;
             FUNC_INFO << "visOrder" << visOrder;
             if ( _saveSelectedScans.count() > 0 )
@@ -152,32 +148,68 @@ void MainWindow::scanDirectories()
     }
 
     // add scans to the table
-    _scanItems.clear();
-    _scanItemsBox->clear();
-    _scanItems.resize(_scans.size());
-    for (int jList=0; jList<_scans.size(); jList++)
+    _scanTable->clearContents();
+    _scanTable->setColumnCount(9);
+    QTableWidgetItem *scanHeaderItem = new QTableWidgetItem(tr("Scan"));
+    QTableWidgetItem *seqHeaderItem   = new QTableWidgetItem(tr("Sequence"));
+    QTableWidgetItem *xHeaderItem = new QTableWidgetItem(tr("x"));
+    QTableWidgetItem *yHeaderItem = new QTableWidgetItem(tr("y"));
+    QTableWidgetItem *zHeaderItem = new QTableWidgetItem(tr("z"));
+    QTableWidgetItem *tHeaderItem = new QTableWidgetItem(tr("t"));
+    QTableWidgetItem *startHeaderItem = new QTableWidgetItem(tr("start"));
+    QTableWidgetItem *endHeaderItem = new QTableWidgetItem(tr("end"));
+    _scanTable->setHorizontalHeaderItem(1, scanHeaderItem);
+    _scanTable->setHorizontalHeaderItem(2, seqHeaderItem);
+    _scanTable->setHorizontalHeaderItem(3, xHeaderItem);
+    _scanTable->setHorizontalHeaderItem(4, yHeaderItem);
+    _scanTable->setHorizontalHeaderItem(5, zHeaderItem);
+    _scanTable->setHorizontalHeaderItem(6, tHeaderItem);
+    _scanTable->setHorizontalHeaderItem(7, startHeaderItem);
+    _scanTable->setHorizontalHeaderItem(8, endHeaderItem);
+    _scanTable->verticalHeader()->setVisible(false);
+
+    _scanTable->setRowCount(_scans.size());
+
+    for (int jScan=0; jScan<_scans.size(); jScan++)
     {
-        scanType scan = _scans.at(jList);
-        QString volumes = "volumes";  if ( scan.dim.t == 1 ) volumes = "volume";
-        QString text = QString("%1 %2 %3x%4x%5 (%6 %7), %8").arg(scan.scanNumber).arg(scan.sequenceName)
-                .arg(scan.dim.x).arg(scan.dim.y).arg(scan.dim.z).arg(scan.dim.t).arg(volumes).arg(scan.timeDuration);
-        _scanItems[jList].setText(text);
-        _scanItems[jList].setFlags(Qt::ItemIsEnabled | Qt::ItemIsUserCheckable | Qt::ItemIsSelectable);
-        if ( scan.selectedAsImportant )
-            _scanItems[jList].setCheckState(Qt::Checked);
+        scanType scan = _scans.at(jScan);
+
+        QTableWidgetItem *checkItem= new QTableWidgetItem("");
+        QTableWidgetItem *scanItem = new QTableWidgetItem(QString("%1").arg(scan.scanNumber));
+        QTableWidgetItem *seqItem  = new QTableWidgetItem(QString("%1").arg(scan.sequenceName));
+        QTableWidgetItem *xItem    = new QTableWidgetItem(QString("%1").arg(scan.dim.x));
+        QTableWidgetItem *yItem    = new QTableWidgetItem(QString("%1").arg(scan.dim.y));
+        QTableWidgetItem *zItem    = new QTableWidgetItem(QString("%1").arg(scan.dim.z));
+        QTableWidgetItem *tItem    = new QTableWidgetItem(QString("%1").arg(scan.dim.t));
+        QTableWidgetItem *startItem= new QTableWidgetItem(QString("%1").arg(scan.timeStart));
+        QTableWidgetItem *endItem  = new QTableWidgetItem(QString("%1").arg(scan.timeEnd));
+
+        checkItem->setFlags(checkItem->flags() | Qt::ItemIsUserCheckable);
+        if ( _scans.at(jScan).selectedAsImportant )
+            checkItem->setCheckState(Qt::Checked);
         else
-            _scanItems[jList].setCheckState(Qt::Unchecked);
-        _scanItems[jList].setHidden(false);
-        _scanItemsBox->addItem(&_scanItems[jList]);
+            checkItem->setCheckState(Qt::Unchecked);
+//        scanItem->setFlags(scanItem->flags() | Qt::ItemIsSelectable);
+
+        _scanTable->setItem(jScan,0,checkItem);
+        _scanTable->setItem(jScan,1,scanItem);
+        _scanTable->setItem(jScan,2,seqItem);
+        _scanTable->setItem(jScan,3,xItem);
+        _scanTable->setItem(jScan,4,yItem);
+        _scanTable->setItem(jScan,5,zItem);
+        _scanTable->setItem(jScan,6,tItem);
+        _scanTable->setItem(jScan,7,startItem);
+        _scanTable->setItem(jScan,8,endItem);
     }
+    _scanTable->resizeColumnsToContents();
+    _scanTable->update();
 
     // select the first important scan
-    for (int jList=0; jList<_scans.size(); jList++)
+    for (int jScan=0; jScan<_scans.size(); jScan++)
     {
-        if ( _scans.at(jList).selectedAsImportant )
+        if ( _scans.at(jScan).selectedAsImportant )
         {
-            FUNC_INFO << "** select scan **" << jList;
-            _scanItems[jList].setSelected(true);
+            _scanTable->selectRow(jScan);
             break;
         }
     }
@@ -254,21 +286,22 @@ int MainWindow::getVisuCoreOrientation(QString fileName)
     return 0;
 }
 
-QString MainWindow::getTimeDuration(QString fileName)
+QStringList MainWindow::getSequenceTimes(QString fileName)
 {
     FUNC_ENTER << fileName;
-    QString timeSpan;
+    QStringList sequenceTimes;
     QFileInfo checkFile(fileName);
     if ( !(checkFile.exists() && checkFile.isFile()) )
-        return timeSpan;
+        return sequenceTimes;
 
     QFile infile(fileName);
     if (!infile.open(QIODevice::ReadOnly | QIODevice::Text))
-        return timeSpan;
+        return sequenceTimes;
     QTextStream in_stream(&infile);
 
     QString fullParameterName = "##Owner";
 
+    sequenceTimes.clear();
     while (!in_stream.atEnd())
     {
         QString line = in_stream.readLine();
@@ -305,12 +338,13 @@ QString MainWindow::getTimeDuration(QString fileName)
                 QTime endTime = startTime.addSecs(lengthHours * 60 * 60);
                 endTime = endTime.addSecs(lengthMinutes * 60);
                 endTime = endTime.addSecs(lengthSeconds);
-                timeSpan = QString("@ %1 to %2").arg(startTime.toString()).arg(endTime.toString());
+                sequenceTimes.append(startTime.toString());
+                sequenceTimes.append(endTime.toString());
                 break;
             }
         }
     }
     infile.close();
     FUNC_EXIT;
-    return timeSpan;
+    return sequenceTimes;
 }

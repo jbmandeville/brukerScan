@@ -10,6 +10,7 @@
 #include <QComboBox>
 #include <QCheckBox>
 #include <QSettings>
+#include <QTableWidget>
 #include <QListWidget>
 #include <QGroupBox>
 #include <QTextBrowser>
@@ -68,7 +69,8 @@ private:
     {
         QString scanNumber;
         QString sequenceName;
-        QString timeDuration;
+        QString timeStart;
+        QString timeEnd;
         iPoint4D dim={0,0,0,0};  // x,y,z,t
         bool selectedAsImportant=false;
         bool reorderEchoes=false;
@@ -99,8 +101,7 @@ private:
 
     // Scans page
     QLineEdit *_subjectID;
-    QListWidget *_scanItemsBox;
-    QVector<QListWidgetItem> _scanItems;
+    QTableWidget *_scanTable;
 
     // upload page
     QLineEdit *_dataBaseDir;
@@ -130,7 +131,7 @@ private:
     QString getParameterString(QString fileName, QString parameterName);
     int getVisuCoreOrientation(QString fileName);
     iPoint4D getImageDimensions(QString dirname);
-    QString getTimeDuration(QString fileName);
+    QStringList getSequenceTimes(QString fileName);
     void scanDirectories();
     QString concatenateSelectedScanString();
 
@@ -159,7 +160,7 @@ private slots:
     void helpGoForward();
     void viewScanUsingFastMap();
     void displayFM(int iScan);
-    void changedSelectScanCheckBox(QListWidgetItem *item);
+    void changedHighlightScan(int row, int column);
     void openNewSubject();
     void updateStudy();
 
