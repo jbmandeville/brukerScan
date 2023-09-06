@@ -69,8 +69,10 @@ private:
     {
         QString scanNumber;
         QString sequenceName;
-        QString timeStart;
-        QString timeEnd;
+        QString timeStartString;
+        QString timeEndString;
+        QTime timeStart;
+        QTime timeEnd;
         iPoint4D dim={0,0,0,0};  // x,y,z,t
         bool selectedAsImportant=false;
         bool reorderEchoes=false;
@@ -101,6 +103,7 @@ private:
 
     // Scans page
     QLineEdit *_subjectID;
+    QLabel *_subjectScanTimes;
     QTableWidget *_scanTable;
 
     // upload page
@@ -131,7 +134,7 @@ private:
     QString getParameterString(QString fileName, QString parameterName);
     int getVisuCoreOrientation(QString fileName);
     iPoint4D getImageDimensions(QString dirname);
-    QStringList getSequenceTimes(QString fileName);
+    void getSequenceTimes(QString fileName, scanType &scan);
     void scanDirectories();
     QString concatenateSelectedScanString();
 

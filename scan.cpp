@@ -110,6 +110,8 @@ void MainWindow::scanDirectories()
 
     _scans.clear();
     _saveSelectedScans.clear();
+    QTime maxTime = QTime(0, 0, 0, 0);
+    QTime minTime = QTime(23, 59, 59, 0);
     for (int jScan=0; jScan<folderList.size(); jScan++)
     {
         QDir scanDir(folderList.at(jScan));
@@ -124,9 +126,7 @@ void MainWindow::scanDirectories()
             QString fileName = topDir.dirName() + "/" + name + "/method";
             thisScan.sequenceName = getParameterString(fileName,"Method");
             thisScan.sequenceName.remove("Bruker:");
-            QStringList sequenceTimes = getSequenceTimes(fileName);
-            thisScan.timeStart = sequenceTimes.at(0);
-            thisScan.timeEnd   = sequenceTimes.at(1);
+            getSequenceTimes(fileName,thisScan);
             FUNC_INFO << "jScan" << jScan << "scanNumber" << thisScan.scanNumber << "sequence" << thisScan.sequenceName;
             thisScan.dim = getImageDimensions(name);
             fileName = topDir.dirName() + "/" + name + "/pdata/1/visu_pars";
@@ -144,8 +144,13 @@ void MainWindow::scanDirectories()
             else
                 thisScan.selectedAsImportant = thisScan.dim.z > 3 || thisScan.dim.t > 1;
             _scans.append(thisScan);
+            if ( thisScan.timeStart < minTime ) minTime = thisScan.timeStart;
+            if ( thisScan.timeEnd   > maxTime ) maxTime = thisScan.timeEnd;
         }
     }
+    int diffMin = minTime.secsTo(maxTime) / 60;
+    QString text = QString("%1    -->   %2   ,   duration %3 min").arg(minTime.toString()).arg(maxTime.toString()).arg(diffMin);
+    _subjectScanTimes->setText(text);
 
     // add scans to the table
     _scanTable->clearContents();
@@ -181,8 +186,8 @@ void MainWindow::scanDirectories()
         QTableWidgetItem *yItem    = new QTableWidgetItem(QString("%1").arg(scan.dim.y));
         QTableWidgetItem *zItem    = new QTableWidgetItem(QString("%1").arg(scan.dim.z));
         QTableWidgetItem *tItem    = new QTableWidgetItem(QString("%1").arg(scan.dim.t));
-        QTableWidgetItem *startItem= new QTableWidgetItem(QString("%1").arg(scan.timeStart));
-        QTableWidgetItem *endItem  = new QTableWidgetItem(QString("%1").arg(scan.timeEnd));
+        QTableWidgetItem *startItem= new QTableWidgetItem(QString("%1").arg(scan.timeStartString));
+        QTableWidgetItem *endItem  = new QTableWidgetItem(QString("%1").arg(scan.timeEndString));
 
         checkItem->setFlags(checkItem->flags() | Qt::ItemIsUserCheckable);
         if ( _scans.at(jScan).selectedAsImportant )
@@ -286,22 +291,20 @@ int MainWindow::getVisuCoreOrientation(QString fileName)
     return 0;
 }
 
-QStringList MainWindow::getSequenceTimes(QString fileName)
+void MainWindow::getSequenceTimes(QString fileName, scanType &scan)
 {
     FUNC_ENTER << fileName;
-    QStringList sequenceTimes;
     QFileInfo checkFile(fileName);
     if ( !(checkFile.exists() && checkFile.isFile()) )
-        return sequenceTimes;
+        return;
 
     QFile infile(fileName);
     if (!infile.open(QIODevice::ReadOnly | QIODevice::Text))
-        return sequenceTimes;
+        return;
     QTextStream in_stream(&infile);
 
     QString fullParameterName = "##Owner";
 
-    sequenceTimes.clear();
     while (!in_stream.atEnd())
     {
         QString line = in_stream.readLine();
@@ -325,7 +328,7 @@ QStringList MainWindow::getSequenceTimes(QString fileName)
                 int startHours   = timePieces.at(0).toInt(&ok);
                 int startMinutes = timePieces.at(1).toInt(&ok);
                 int startSeconds = timePieces.at(2).toInt(&ok);
-                QTime startTime = QTime(startHours, startMinutes, startSeconds, 0);
+                scan.timeStart = QTime(startHours, startMinutes, startSeconds, 0);
 
                 // get the length of the scan
                 QString lengthScan = getParameterString(fileName,"PVM_ScanTimeStr");
@@ -335,16 +338,15 @@ QStringList MainWindow::getSequenceTimes(QString fileName)
                 int lengthMinutes = lengthPieces.at(1).toInt(&ok);
                 int lengthSeconds = lengthPieces.at(2).toInt(&ok);
                 QTime lengthTime = QTime(lengthHours, lengthMinutes, lengthSeconds, 0);
-                QTime endTime = startTime.addSecs(lengthHours * 60 * 60);
-                endTime = endTime.addSecs(lengthMinutes * 60);
-                endTime = endTime.addSecs(lengthSeconds);
-                sequenceTimes.append(startTime.toString());
-                sequenceTimes.append(endTime.toString());
+                scan.timeEnd = scan.timeStart.addSecs(lengthHours * 60 * 60);
+                scan.timeEnd = scan.timeEnd.addSecs(lengthMinutes * 60);
+                scan.timeEnd = scan.timeEnd.addSecs(lengthSeconds);
+                scan.timeStartString = scan.timeStart.toString();
+                scan.timeEndString = scan.timeEnd.toString();
                 break;
             }
         }
     }
     infile.close();
     FUNC_EXIT;
-    return sequenceTimes;
 }

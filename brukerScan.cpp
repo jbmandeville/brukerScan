@@ -97,8 +97,14 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     queryLayout->addWidget(refreshSubject,0,2);
     queryLayout->addWidget(openDirectory,0,3);
 
+    _subjectScanTimes = new QLabel();
+
+    auto *subjectLayout = new QVBoxLayout();
+    subjectLayout->addLayout(queryLayout);
+    subjectLayout->addWidget(_subjectScanTimes);
+
     auto *subjectGroupBox = new QGroupBox("Subject information");
-    subjectGroupBox->setLayout(queryLayout);
+    subjectGroupBox->setLayout(subjectLayout);
 
     FUNC_INFO << "create tabs";
     int iPanel=0;
