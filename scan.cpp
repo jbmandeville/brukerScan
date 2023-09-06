@@ -115,6 +115,7 @@ void MainWindow::scanDirectories()
     FUNC_INFO << folderList;
 
     _scans.clear();
+    _saveSelectedScans.clear();
     for (int jList=0; jList<folderList.size(); jList++)
     {
         QDir scanDir(folderList.at(jList));

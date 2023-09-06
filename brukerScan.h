@@ -36,8 +36,9 @@ enum CommandLineParseResult
 };
 struct CommandOptions
 {
-    QString startupText;     // help
+    QString startupText;      // help
     bool spanUpload=false;
+    bool enableCleanup=true;  // disable for acquisition mode
 };
 
 class MainWindow : public QMainWindow

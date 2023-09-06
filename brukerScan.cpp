@@ -30,7 +30,9 @@ CommandLineParseResult MainWindow::parseCommandLine(QStringList commandLine)
 
     const QCommandLineOption helpOption = parser.addHelpOption();
     const QCommandLineOption spanOption({"s","span"}, "add SPAN upload page");
-    parser.addOption(spanOption);  // should add auto-calculate and auto-quit by default
+    parser.addOption(spanOption);
+    const QCommandLineOption noCleanOption({"n","no-cleanup"}, "add SPAN upload page");
+    parser.addOption(noCleanOption);
 
     bool success = parser.parse(commandLine);
     if ( !success || parser.isSet(helpOption))
@@ -38,7 +40,8 @@ CommandLineParseResult MainWindow::parseCommandLine(QStringList commandLine)
     if ( !success ) return CommandLineError;
 
     // parsing is done at this point
-    if ( parser.isSet(spanOption) ) _inputOptions.spanUpload = true;
+    if ( parser.isSet(spanOption) )    _inputOptions.spanUpload = true;
+    if ( parser.isSet(noCleanOption) ) _inputOptions.enableCleanup = false;
 
     FUNC_INFO << "span is set??" << _inputOptions.spanUpload;
 
@@ -478,6 +481,10 @@ void MainWindow::loadNotes()
 
     QTextStream in_stream(&inFile);
     QRegularExpression whiteSpaceComma("[,\\s]");// match a comma or a space
+
+    // clear notes
+    for (int jNote=0; jNote<_noteBox.count(); jNote++)
+        _noteBox[jNote]->setText("");
 
     // find the 1st tab; also, read parameters
     QStringList stringList;

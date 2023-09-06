@@ -23,6 +23,11 @@ QWidget *MainWindow::createCleanPanel()
     connect(_cleanAllFIDs,   SIGNAL(pressed()), this, SLOT(cleanAllFIDs()));
     connect(_cleanAllDICOMs, SIGNAL(pressed()), this, SLOT(cleanAllDICOMs()));
 
+    _cleanUnselectedFIDs->setEnabled(_inputOptions.enableCleanup);
+    _cleanUnselectedDICOMs->setEnabled(_inputOptions.enableCleanup);
+    _cleanAllFIDs->setEnabled(_inputOptions.enableCleanup);
+    _cleanAllDICOMs->setEnabled(_inputOptions.enableCleanup);
+
     auto *unselectedLayout = new QVBoxLayout();
     unselectedLayout->addWidget(_cleanUnselectedFIDs);
     unselectedLayout->addWidget(_cleanUnselectedDICOMs);
