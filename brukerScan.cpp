@@ -128,8 +128,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     connect(_tabs, SIGNAL(currentChanged(int)), this, SLOT(changedPage(int)));
 
     _scanTable = new QTableWidget(this);
-    _scanTable->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::MinimumExpanding);
-    _scanTable->setSizeAdjustPolicy(QAbstractScrollArea::AdjustToContents);
+//    _scanTable->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::MinimumExpanding);
+//    _scanTable->setSizeAdjustPolicy(QAbstractScrollArea::AdjustToContentsOnFirstShow);
     connect( _scanTable, SIGNAL(cellClicked(int,int)), this, SLOT(changedHighlightScan(int,int)));
 
     auto *scansLayout = new QVBoxLayout();

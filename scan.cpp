@@ -207,6 +207,7 @@ void MainWindow::scanDirectories()
         _scanTable->setItem(jScan,8,endItem);
     }
     _scanTable->resizeColumnsToContents();
+    _scanTable->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
     _scanTable->update();
 
     // select the first important scan
