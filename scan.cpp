@@ -213,7 +213,7 @@ void MainWindow::scanDirectories()
         QTableWidgetItem *tItem    = new QTableWidgetItem(QString("%1").arg(scan.dim.t));
         QTableWidgetItem *startItem= new QTableWidgetItem(QString("%1").arg(scan.timeStartString));
         QTableWidgetItem *endItem  = new QTableWidgetItem(QString("%1").arg(scan.timeEndString));
-        QString minutes; minutes.setNum(scan.durationMinutes,'g',1);
+        QString minutes; minutes.setNum(scan.durationMinutes,'f',1);
         QTableWidgetItem *durItem  = new QTableWidgetItem(QString("%1").arg(minutes));
 
         checkItem->setFlags(checkItem->flags() | Qt::ItemIsUserCheckable);
