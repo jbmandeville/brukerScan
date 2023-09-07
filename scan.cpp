@@ -115,13 +115,18 @@ void MainWindow::scanDirectories()
     for (int jScan=0; jScan<folderList.size(); jScan++)
     {
         QDir scanDir(folderList.at(jScan));
-        scanDir.setNameFilters(QStringList()<<"fid");
-        QStringList fileList = scanDir.entryList();
-        if ( fileList.count() == 1 )
+        QString name2dseq = scanDir.dirName() + "/pdata/1/2dseq";
+        QString nameVisuPars = scanDir.dirName() + "/pdata/1/visu_pars";
+        QFileInfo check2dseq(name2dseq);
+        QFileInfo checkVisuPars(nameVisuPars);
+        bool file2dseqExists    = check2dseq.exists()    && check2dseq.isFile();
+        bool fileVisuParsExists = checkVisuPars.exists() && checkVisuPars.isFile();
+        if ( file2dseqExists )
         {
             QString name = folderList.at(jScan);
             int scanNumber = name.toInt();
             scanType thisScan;
+            thisScan.completedScan = fileVisuParsExists;
             thisScan.scanNumber = QString("%1").arg(scanNumber);
             QString fileName = topDir.dirName() + "/" + name + "/method";
             thisScan.sequenceName = getParameterString(fileName,"Method");
@@ -143,14 +148,29 @@ void MainWindow::scanDirectories()
                 thisScan.selectedAsImportant = _saveSelectedScans.contains(name);
             else
                 thisScan.selectedAsImportant = thisScan.dim.z > 3 || thisScan.dim.t > 1;
-            _scans.append(thisScan);
             if ( thisScan.timeStart < minTime ) minTime = thisScan.timeStart;
             if ( thisScan.timeEnd   > maxTime ) maxTime = thisScan.timeEnd;
+            _scans.append(thisScan);
         }
     }
     int diffMin = minTime.secsTo(maxTime) / 60;
     QString text = QString("%1    -->   %2   ,   duration %3 min").arg(minTime.toString()).arg(maxTime.toString()).arg(diffMin);
     _subjectScanTimes->setText(text);
+
+    // sort the scans by start time
+    iVector scanIndex;
+    dVector scanMS;
+    for (int jScan=0; jScan<_scans.count(); jScan++)
+    {
+        scanType scan = _scans.at(jScan);
+        scanIndex.append(jScan);
+        scanMS.append(scan.timeStart.msecsSinceStartOfDay());
+    }
+    utilMath::topDownMergeSort(scanMS,scanIndex);
+    QVector<scanType> saveScans = _scans;
+    _scans.clear();
+    for (int jScan=0; jScan<saveScans.count(); jScan++)
+        _scans.append(saveScans.at(scanIndex.at(jScan)));
 
     // add scans to the table
     _scanTable->clearContents();
@@ -172,6 +192,7 @@ void MainWindow::scanDirectories()
     _scanTable->setHorizontalHeaderItem(7, startHeaderItem);
     _scanTable->setHorizontalHeaderItem(8, endHeaderItem);
     _scanTable->verticalHeader()->setVisible(false);
+//    scanHeaderItem->setFlags(scanHeaderItem->flags() & ~Qt::ItemIsSelectable);
 
     _scanTable->setRowCount(_scans.size());
 
@@ -195,6 +216,8 @@ void MainWindow::scanDirectories()
         else
             checkItem->setCheckState(Qt::Unchecked);
 //        scanItem->setFlags(scanItem->flags() | Qt::ItemIsSelectable);
+
+        if ( !scan.completedScan ) checkItem->setBackground(Qt::gray);
 
         _scanTable->setItem(jScan,0,checkItem);
         _scanTable->setItem(jScan,1,scanItem);

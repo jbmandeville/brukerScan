@@ -1,7 +1,7 @@
 This page shows the subject name and a list of scans with info about each scan.
 
 By default, scans are only shown in the list if
-    1) data was acquired (i.e., a file named 'fid' exists on the scan directory).
+    1) data were acquired and reconstructed (i.e., a file named pdata/1/2dseq exists on the scan directory).
     2) ...
 
 You can select a list of "interesting" scans, and this information will be saved.
