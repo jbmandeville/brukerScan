@@ -8,10 +8,10 @@ QWidget *MainWindow::createScanPanel()
     auto *scanPanel = new QWidget();
 
     auto *viewLayout = new QVBoxLayout();
-    auto *viewPushButton = new QPushButton("view using FastMap");
-    connect(viewPushButton, SIGNAL(pressed()), this, SLOT(viewScanUsingFastMap()));
+    _viewUsingFastmap = new QPushButton("view using FastMap");
+    connect(_viewUsingFastmap, SIGNAL(pressed()), this, SLOT(viewScanUsingFastMap()));
 
-    viewLayout->addWidget(viewPushButton);
+    viewLayout->addWidget(_viewUsingFastmap);
     auto *viewBox = new QGroupBox("View selected scan");
     viewBox->setLayout(viewLayout);
 
@@ -25,6 +25,7 @@ void MainWindow::changedHighlightScan(int row, int column)
 {
     FUNC_ENTER << row << column;
     _scanTable->selectRow(row);
+    _viewUsingFastmap->setEnabled(_scans.at(row).completedScan);
 }
 
 void MainWindow::viewScanUsingFastMap()

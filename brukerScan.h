@@ -106,6 +106,7 @@ private:
     QLineEdit *_subjectID;
     QLabel *_subjectScanTimes;
     QTableWidget *_scanTable;
+    QPushButton *_viewUsingFastmap;
 
     // upload page
     QLineEdit *_dataBaseDir;

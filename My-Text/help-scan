@@ -1,8 +1,8 @@
 This page shows the subject name and a list of scans with info about each scan.
 
-By default, scans are only shown in the list if
-    1) data were acquired and reconstructed (i.e., a file named pdata/1/2dseq exists on the scan directory).
-    2) ...
+By default, scans are only shown in the list if data were acquired and reconstructed
+(i.e., a file named pdata/1/2dseq exists on the scan directory). Data can be displayed
+using fastmap if the scan was completed (i.e., pdata/1/visu_pars exists).
 
 You can select a list of "interesting" scans, and this information will be saved.
 By default, scans are selected as "interesting" if they have
