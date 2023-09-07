@@ -19,6 +19,7 @@
 #include <QDebug>
 #include <QStatusBar>
 #include <QHBoxLayout>
+#include <QTime>
 
 #include "io.h"
 
