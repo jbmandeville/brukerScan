@@ -71,6 +71,7 @@ private:
         QString sequenceName;
         QString timeStartString;
         QString timeEndString;
+        double durationMinutes;
         QTime timeStart;
         QTime timeEnd;
         iPoint4D dim={0,0,0,0};  // x,y,z,t

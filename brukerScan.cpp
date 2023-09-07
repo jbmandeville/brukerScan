@@ -83,12 +83,14 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     QPixmap pixmapSave(":/My-Icons/openFile.png");
     QIcon openIcon(pixmapSave);
     openDirectory->setIcon(openIcon);
+    openDirectory->setToolTip("Open a new subject directory");
     connect(openDirectory, SIGNAL(clicked()), this, SLOT(openNewSubject()));
 
     auto *refreshSubject = new QPushButton("refresh");
     QPixmap pixmapRefresh(":/My-Icons/editundo.png");
     QIcon refreshIcon(pixmapRefresh);
     refreshSubject->setIcon(refreshIcon);
+    refreshSubject->setToolTip("Rescan the current directory (maybe still in progress) and reset default check marks");
     connect(refreshSubject, SIGNAL(clicked()), this, SLOT(updateStudy()));
 
     auto *queryLayout = new QGridLayout();

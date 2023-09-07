@@ -9,6 +9,7 @@ QWidget *MainWindow::createScanPanel()
 
     auto *viewLayout = new QVBoxLayout();
     _viewUsingFastmap = new QPushButton("view using FastMap");
+    _viewUsingFastmap->setToolTip("Display using fastmap after creating header file 2dseq.hdr\nor reordering data into image.nii");
     connect(_viewUsingFastmap, SIGNAL(pressed()), this, SLOT(viewScanUsingFastMap()));
 
     viewLayout->addWidget(_viewUsingFastmap);
@@ -175,7 +176,7 @@ void MainWindow::scanDirectories()
 
     // add scans to the table
     _scanTable->clearContents();
-    _scanTable->setColumnCount(9);
+    _scanTable->setColumnCount(10);
     QTableWidgetItem *scanHeaderItem = new QTableWidgetItem(tr("Scan"));
     QTableWidgetItem *seqHeaderItem   = new QTableWidgetItem(tr("Sequence"));
     QTableWidgetItem *xHeaderItem = new QTableWidgetItem(tr("x"));
@@ -184,6 +185,7 @@ void MainWindow::scanDirectories()
     QTableWidgetItem *tHeaderItem = new QTableWidgetItem(tr("t"));
     QTableWidgetItem *startHeaderItem = new QTableWidgetItem(tr("start"));
     QTableWidgetItem *endHeaderItem = new QTableWidgetItem(tr("end"));
+    QTableWidgetItem *durHeaderItem = new QTableWidgetItem(tr("minutes"));
     _scanTable->setHorizontalHeaderItem(1, scanHeaderItem);
     _scanTable->setHorizontalHeaderItem(2, seqHeaderItem);
     _scanTable->setHorizontalHeaderItem(3, xHeaderItem);
@@ -192,6 +194,7 @@ void MainWindow::scanDirectories()
     _scanTable->setHorizontalHeaderItem(6, tHeaderItem);
     _scanTable->setHorizontalHeaderItem(7, startHeaderItem);
     _scanTable->setHorizontalHeaderItem(8, endHeaderItem);
+    _scanTable->setHorizontalHeaderItem(9, durHeaderItem);
     _scanTable->verticalHeader()->setVisible(false);
 //    scanHeaderItem->setFlags(scanHeaderItem->flags() & ~Qt::ItemIsSelectable);
 
@@ -210,6 +213,7 @@ void MainWindow::scanDirectories()
         QTableWidgetItem *tItem    = new QTableWidgetItem(QString("%1").arg(scan.dim.t));
         QTableWidgetItem *startItem= new QTableWidgetItem(QString("%1").arg(scan.timeStartString));
         QTableWidgetItem *endItem  = new QTableWidgetItem(QString("%1").arg(scan.timeEndString));
+        QTableWidgetItem *durItem  = new QTableWidgetItem(QString("%1").arg(scan.durationMinutes));
 
         checkItem->setFlags(checkItem->flags() | Qt::ItemIsUserCheckable);
         if ( _scans.at(jScan).selectedAsImportant )
@@ -229,6 +233,7 @@ void MainWindow::scanDirectories()
         _scanTable->setItem(jScan,6,tItem);
         _scanTable->setItem(jScan,7,startItem);
         _scanTable->setItem(jScan,8,endItem);
+        _scanTable->setItem(jScan,9,durItem);
     }
     _scanTable->resizeColumnsToContents();
     _scanTable->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
@@ -363,6 +368,8 @@ void MainWindow::getSequenceTimes(QString fileName, scanType &scan)
                 int lengthMinutes = lengthPieces.at(1).toInt(&ok);
                 int lengthSeconds = lengthPieces.at(2).toInt(&ok);
                 QTime lengthTime = QTime(lengthHours, lengthMinutes, lengthSeconds, 0);
+                scan.durationMinutes = static_cast<double>(lengthTime.msecsSinceStartOfDay()) / 1000. / 60.;
+                qInfo() << "duration minutes" << scan.durationMinutes;
                 scan.timeEnd = scan.timeStart.addSecs(lengthHours * 60 * 60);
                 scan.timeEnd = scan.timeEnd.addSecs(lengthMinutes * 60);
                 scan.timeEnd = scan.timeEnd.addSecs(lengthSeconds);
