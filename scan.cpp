@@ -46,7 +46,7 @@ void MainWindow::viewScanUsingFastMap()
             iSelect = jScan;
     }
     FUNC_INFO << "iSelect" << iSelect;
-    if ( iSelect > 0 )
+    if ( iSelect >= 0 )
         displayFM(iSelect);
 }
 
