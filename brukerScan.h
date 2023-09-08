@@ -56,6 +56,7 @@ private:
     struct scanType
     {
         int scanNumber;
+        QString scanName;        // could be symbolic link: e.g.: rare --> 3
         QString sequenceName;
         QString timeStartString;
         QString timeEndString;

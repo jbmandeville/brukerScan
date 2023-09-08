@@ -60,9 +60,8 @@ void MainWindow::displayFM(int iScan)
     else
         exe = _scriptDirectory + "view.script";
 
-    QString scanNumber; scanNumber.setNum(thisScan.scanNumber);
     QStringList arguments;
-    arguments.append(scanNumber);
+    arguments.append(thisScan.scanName);
 
     auto *process = new QProcess();
     FUNC_EXIT << "exe arguments" << exe << arguments;
@@ -136,6 +135,7 @@ void MainWindow::scanDirectories()
             scanType thisScan;
             thisScan.completedScan = fileVisuParsExists;
             thisScan.scanNumber = scanNumber;
+            thisScan.scanName   = name;
             QString fileName = topDir.dirName() + "/" + name + "/method";
             thisScan.sequenceName = getParameterString(fileName,"Method");
             thisScan.sequenceName.remove("Bruker:");
@@ -225,7 +225,7 @@ void MainWindow::scanDirectories()
         scanType scan = _scans.at(jScan);
 
         QTableWidgetItem *checkItem= new QTableWidgetItem("");
-        QTableWidgetItem *scanItem = new QTableWidgetItem(QString("%1").arg(scan.scanNumber));
+        QTableWidgetItem *scanItem = new QTableWidgetItem(QString("%1").arg(scan.scanName));
         QTableWidgetItem *seqItem  = new QTableWidgetItem(QString("%1").arg(scan.sequenceName));
         QTableWidgetItem *xItem    = new QTableWidgetItem(QString("%1").arg(scan.dim.x));
         QTableWidgetItem *yItem    = new QTableWidgetItem(QString("%1").arg(scan.dim.y));

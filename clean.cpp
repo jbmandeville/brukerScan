@@ -71,10 +71,9 @@ void MainWindow::findDICOMs(bool all, bool remove)
         qint64 totalSizeThisScan=0;
         if ( includeScan )
         {
-            QString scanNumber; scanNumber.setNum(scan.scanNumber);
             QString spec;
             spec = "MR*";
-            QString dirName = scanNumber + "/pdata/1/dicom";
+            QString dirName = scan.scanName + "/pdata/1/dicom";
             QDir dir(dirName);
             QStringList const fileList = dir.entryList( {spec}, QDir::Files | QDir::NoSymLinks);
 
@@ -140,16 +139,15 @@ void MainWindow::findFIDs(bool all, bool remove)
         qint64 totalSizeThisScan=0;
         if ( includeScan )
         {
-            QString scanNumber; scanNumber.setNum(scan.scanNumber);
             QString spec;
             spec = "fid";
-            QDir dir(scanNumber);
+            QDir dir(scan.scanName);
             QStringList const fileList = dir.entryList( {spec}, QDir::Files | QDir::NoSymLinks);
 
             qint64 totalSizeThisDir=0;
             for (int jFile=0; jFile<fileList.size(); jFile++)
             {
-                QString fileName = scanNumber + "/" + fileList.at(jFile);
+                QString fileName = scan.scanName + "/" + fileList.at(jFile);
                 QFileInfo checkFile(fileName);
                 if ( remove )
                 {
