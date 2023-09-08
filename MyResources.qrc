@@ -6,5 +6,7 @@
         <file>My-Text/help-scan</file>
         <file>My-Icons/openFile.png</file>
         <file>My-Icons/editundo.png</file>
+        <file>My-Icons/upArrow.png</file>
+        <file>My-Icons/downArrow.png</file>
     </qresource>
 </RCC>

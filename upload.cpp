@@ -88,10 +88,11 @@ void MainWindow::prepareDataForUpload()
         // Make the destination subdirectory
         if ( scan.selectedAsImportant )
         {
-            QString numberedDestintionPath = uploadDir.absolutePath() + "/" + scan.scanNumber;
+            QString scanNumber; scanNumber.setNum(scan.scanNumber);
+            QString numberedDestintionPath = uploadDir.absolutePath() + "/" + scanNumber;
             uploadDir.mkdir(numberedDestintionPath);
             // Find the dicoms and copy them to the destination
-            QString sourceDir = "./" + scan.scanNumber + "/pdata/1/dicom";
+            QString sourceDir = "./" + scanNumber + "/pdata/1/dicom";
             QDir dicomDir(sourceDir);
             FUNC_INFO << "dicomDir" << dicomDir.absolutePath();
             QStringList const fileList = dicomDir.entryList( {"MR*"}, QDir::Files | QDir::NoSymLinks);

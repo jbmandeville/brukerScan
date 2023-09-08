@@ -28,6 +28,12 @@ void MainWindow::changedHighlightScan(int row, int column)
     _scanTable->selectRow(row);
     _viewUsingFastmap->setEnabled(_scans.at(row).completedScan);
 }
+void MainWindow::headerClicked(int column)
+{
+    qInfo() << "column" << column;
+    if ( column == 1) _reverseOrderScans = !_reverseOrderScans;
+    updateStudy();
+}
 
 void MainWindow::viewScanUsingFastMap()
 {
@@ -54,9 +60,9 @@ void MainWindow::displayFM(int iScan)
     else
         exe = _scriptDirectory + "view.script";
 
-    QString fileName = thisScan.scanNumber;
+    QString scanNumber; scanNumber.setNum(thisScan.scanNumber);
     QStringList arguments;
-    arguments.append(fileName);
+    arguments.append(scanNumber);
 
     auto *process = new QProcess();
     FUNC_EXIT << "exe arguments" << exe << arguments;
@@ -129,7 +135,7 @@ void MainWindow::scanDirectories()
             int scanNumber = name.toInt();
             scanType thisScan;
             thisScan.completedScan = fileVisuParsExists;
-            thisScan.scanNumber = QString("%1").arg(scanNumber);
+            thisScan.scanNumber = scanNumber;
             QString fileName = topDir.dirName() + "/" + name + "/method";
             thisScan.sequenceName = getParameterString(fileName,"Method");
             thisScan.sequenceName.remove("Bruker:");
@@ -161,23 +167,37 @@ void MainWindow::scanDirectories()
 
     // sort the scans by start time
     iVector scanIndex;
-    dVector scanMS;
+    dVector scanNumber;
     for (int jScan=0; jScan<_scans.count(); jScan++)
     {
         scanType scan = _scans.at(jScan);
         scanIndex.append(jScan);
-        scanMS.append(scan.timeStart.msecsSinceStartOfDay());
+        scanNumber.append(scan.scanNumber);
     }
-    utilMath::topDownMergeSort(scanMS,scanIndex);
+    utilMath::topDownMergeSort(scanNumber,scanIndex);
     QVector<scanType> saveScans = _scans;
     _scans.clear();
-    for (int jScan=0; jScan<saveScans.count(); jScan++)
-        _scans.append(saveScans.at(scanIndex.at(jScan)));
+    if ( _reverseOrderScans )
+    {
+        for (int jScan=saveScans.count()-1; jScan>=0; jScan--)
+            _scans.append(saveScans.at(scanIndex.at(jScan)));
+    }
+    else
+    {
+        for (int jScan=0; jScan<saveScans.count(); jScan++)
+            _scans.append(saveScans.at(scanIndex.at(jScan)));
+    }
 
     // add scans to the table
     _scanTable->clearContents();
     _scanTable->setColumnCount(10);
-    QTableWidgetItem *scanHeaderItem = new QTableWidgetItem(tr("Scan"));
+    QPixmap pixmap;
+    if ( _reverseOrderScans )
+        pixmap.load(":/My-Icons/upArrow.png");
+    else
+        pixmap.load(":/My-Icons/downArrow.png");
+    QIcon arrowIcon(pixmap);
+    QTableWidgetItem *scanHeaderItem = new QTableWidgetItem(arrowIcon,"Scan");
     QTableWidgetItem *seqHeaderItem   = new QTableWidgetItem(tr("Sequence"));
     QTableWidgetItem *xHeaderItem = new QTableWidgetItem(tr("x"));
     QTableWidgetItem *yHeaderItem = new QTableWidgetItem(tr("y"));
@@ -370,7 +390,7 @@ void MainWindow::getSequenceTimes(QString fileName, scanType &scan)
                 int lengthSeconds = lengthPieces.at(2).toInt(&ok);
                 QTime lengthTime = QTime(lengthHours, lengthMinutes, lengthSeconds, 0);
                 scan.durationMinutes = static_cast<double>(lengthTime.msecsSinceStartOfDay()) / 1000. / 60.;
-                qInfo() << "duration minutes" << scan.durationMinutes;
+                // qInfo() << "duration minutes" << scan.durationMinutes;
                 scan.timeEnd = scan.timeStart.addSecs(lengthHours * 60 * 60);
                 scan.timeEnd = scan.timeEnd.addSecs(lengthMinutes * 60);
                 scan.timeEnd = scan.timeEnd.addSecs(lengthSeconds);

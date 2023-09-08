@@ -48,19 +48,6 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 private:
-
-//    QString _fastmapProcess     = "/usr/pubsw/packages/jip/bin/Linux-x86_64/FM";
-
-    QString _fastmapProcess     = "/usr/pubsw/packages/FASTMAP/current/bin/FM";
-    QString _scriptDirectory    = "/space/deltabp/1/users/public/script/Bruker/";
-
-    QString _dataBaseDirectory   = "/homes/1/jbm/space2/projects/span2/";
-    QString _uploadTempDirectory = "/space/deltabp/2/users/jbm/projects/upload/";
-    QString _javaExeLocation     = "/homes/1/jbm/space1/dev/java/jdk-16.0.1/bin/java";
-    QString _IDAUploaderFile     = "/space/deltabp/1/users/public/bins/IDA-Uploader-2.0.jar";
-
-    QString _subjectIDSavedAtScanTime;
-    QStringList _saveSelectedScans;
     enum tabPages
     {
         page_scan,
@@ -68,7 +55,7 @@ private:
     };
     struct scanType
     {
-        QString scanNumber;
+        int scanNumber;
         QString sequenceName;
         QString timeStartString;
         QString timeEndString;
@@ -87,6 +74,18 @@ private:
         QByteArray browserWindowGeometry;
         QByteArray helpWindowGeometry;
     };
+
+    QString _fastmapProcess     = "/usr/pubsw/packages/FASTMAP/current/bin/FM";
+    QString _scriptDirectory    = "/space/deltabp/1/users/public/script/Bruker/";
+
+    QString _dataBaseDirectory   = "/homes/1/jbm/space2/projects/span2/";
+    QString _uploadTempDirectory = "/space/deltabp/2/users/jbm/projects/upload/";
+    QString _javaExeLocation     = "/homes/1/jbm/space1/dev/java/jdk-16.0.1/bin/java";
+    QString _IDAUploaderFile     = "/space/deltabp/1/users/public/bins/IDA-Uploader-2.0.jar";
+
+    QString _subjectIDSavedAtScanTime;
+    QStringList _saveSelectedScans;
+    bool _reverseOrderScans=true;
     QVector<scanType> _scans;
     savedSettings _savedSettings;
     QSettings _savedQSettings;
@@ -168,6 +167,7 @@ private slots:
     void viewScanUsingFastMap();
     void displayFM(int iScan);
     void changedHighlightScan(int row, int column);
+    void headerClicked(int column);
     void openNewSubject();
     void updateStudy();
 

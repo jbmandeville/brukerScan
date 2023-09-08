@@ -133,6 +133,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 //    _scanTable->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::MinimumExpanding);
 //    _scanTable->setSizeAdjustPolicy(QAbstractScrollArea::AdjustToContentsOnFirstShow);
     connect( _scanTable, SIGNAL(cellClicked(int,int)), this, SLOT(changedHighlightScan(int,int)));
+    QHeaderView *headerView = _scanTable->horizontalHeader();
+    connect(headerView, SIGNAL(sectionClicked(int)), this, SLOT(headerClicked(int)));
 
     auto *scansLayout = new QVBoxLayout();
     scansLayout->addWidget(_scanTable);
