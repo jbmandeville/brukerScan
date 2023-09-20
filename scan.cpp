@@ -30,7 +30,6 @@ void MainWindow::changedHighlightScan(int row, int column)
 }
 void MainWindow::headerClicked(int column)
 {
-    qInfo() << "column" << column;
     if ( column == 1) _reverseOrderScans = !_reverseOrderScans;
     updateStudy();
 }
@@ -122,7 +121,7 @@ void MainWindow::scanDirectories()
     for (int jScan=0; jScan<folderList.size(); jScan++)
     {
         QDir scanDir(folderList.at(jScan));
-        QString nameMethod = scanDir.dirName() + "method";
+        QString nameMethod = scanDir.dirName() + "/method";
         QString name2dseq = scanDir.dirName() + "/pdata/1/2dseq";
         QString nameVisuPars = scanDir.dirName() + "/pdata/1/visu_pars";
         QFileInfo checkMethod(nameMethod);
@@ -246,8 +245,6 @@ void MainWindow::scanDirectories()
             checkItem->setCheckState(Qt::Unchecked);
 //        scanItem->setFlags(scanItem->flags() | Qt::ItemIsSelectable);
 
-        if ( !scan.completedScan ) checkItem->setBackground(Qt::gray);
-
         _scanTable->setItem(jScan,0,checkItem);
         _scanTable->setItem(jScan,1,scanItem);
         _scanTable->setItem(jScan,2,seqItem);
@@ -258,6 +255,11 @@ void MainWindow::scanDirectories()
         _scanTable->setItem(jScan,7,startItem);
         _scanTable->setItem(jScan,8,endItem);
         _scanTable->setItem(jScan,9,durItem);
+        // disable the whole row if the scan is not completed
+        for (int jItem=0; jItem<10; jItem++)
+        {
+            if ( !scan.completedScan ) _scanTable->item(jScan,jItem)->setFlags(_scanTable->item(jScan,jItem)->flags() & !Qt::ItemIsEnabled );
+        }
     }
     _scanTable->resizeColumnsToContents();
     _scanTable->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
