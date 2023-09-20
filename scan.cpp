@@ -122,18 +122,21 @@ void MainWindow::scanDirectories()
     for (int jScan=0; jScan<folderList.size(); jScan++)
     {
         QDir scanDir(folderList.at(jScan));
+        QString nameMethod = scanDir.dirName() + "method";
         QString name2dseq = scanDir.dirName() + "/pdata/1/2dseq";
         QString nameVisuPars = scanDir.dirName() + "/pdata/1/visu_pars";
+        QFileInfo checkMethod(nameMethod);
         QFileInfo check2dseq(name2dseq);
         QFileInfo checkVisuPars(nameVisuPars);
+        bool fileMethodExists   = checkMethod.exists()   && checkMethod.isFile();
         bool file2dseqExists    = check2dseq.exists()    && check2dseq.isFile();
         bool fileVisuParsExists = checkVisuPars.exists() && checkVisuPars.isFile();
-        if ( file2dseqExists )
+        if ( fileMethodExists )
         {
             QString name = folderList.at(jScan);
             int scanNumber = name.toInt();
             scanType thisScan;
-            thisScan.completedScan = fileVisuParsExists;
+            thisScan.completedScan = file2dseqExists && fileVisuParsExists;
             thisScan.scanNumber = scanNumber;
             thisScan.scanName   = name;
             QString fileName = topDir.dirName() + "/" + name + "/method";
