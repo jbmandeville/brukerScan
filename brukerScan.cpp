@@ -13,6 +13,7 @@ void MainWindow::readCommandLine()
         exit(1);
     case CommandLineHelpRequested:
         QCoreApplication::exit(0);
+        exit(0);
     }
 }
 
@@ -20,10 +21,10 @@ CommandLineParseResult MainWindow::parseCommandLine(QStringList commandLine)
 {
     FUNC_ENTER << commandLine;
     QCommandLineParser parser;
-    QString HelpText = "\nCalculate Ki values for several ROIs using table files.\n";
-    HelpText.append("Syntax:  exe [Variable-TR table] [short-TE table] [long TE-table] [optional args]\n\n");
-    HelpText.append("where\n\n");
-    HelpText.append("tables have 1 header line (x lesion contra sinus) followed by time points");
+    QString HelpText = "\nView Bruker scan directories and display them with FastMap\n";
+    HelpText.append("Syntax:  exe [optional args]\n\n");
+    HelpText.append("where you use\n\n");
+    HelpText.append("-n when scanning online to prevent deletion of any files");
     parser.setApplicationDescription(HelpText);
 
     parser.setSingleDashWordOptionMode(QCommandLineParser::ParseAsLongOptions);
@@ -36,7 +37,11 @@ CommandLineParseResult MainWindow::parseCommandLine(QStringList commandLine)
 
     bool success = parser.parse(commandLine);
     if ( !success || parser.isSet(helpOption))
+    {
         QTextStream(stdout) << parser.helpText();
+        _inputOptions.helpRequested = true;
+        return CommandLineHelpRequested;
+    }
     if ( !success ) return CommandLineError;
 
     // parsing is done at this point
@@ -73,7 +78,17 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
     readQSettings();
     readCommandLine();
+    if ( !_inputOptions.helpRequested )
+    {
+        createGUI();
+        updateStudy();
+        show();
+    }
+}
 
+void MainWindow::createGUI()
+{
+    FUNC_ENTER;
     FUNC_INFO << "create subject";
     auto *subjectIDLabel = new QLabel("Subject ID");
     _subjectID = new QLineEdit("?");
@@ -253,8 +268,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
     restoreGeometry(_savedSettings.imageWindowGeometry);
     _helpTool->restoreGeometry(_savedSettings.imageWindowGeometry);
-
-    updateStudy();
 }
 
 void MainWindow::updateStudy()
@@ -578,7 +591,7 @@ void MainWindow::aboutApp()
     QMessageBox::information(nullptr, QGuiApplication::applicationDisplayName(),
                              QGuiApplication::applicationDisplayName() + ' '
                              + QCoreApplication::applicationVersion() + " , by Joe Mandeville;\n" +
-                             "Request bug fixes by email to\njbm@nmr.mgh.harvard.edu\nwith subject line 'simulator bug'.");
+                             "Request bug fixes by email to\njmandeville@mgh.harvard.edu");
 }
 
 void MainWindow::exitApp()

@@ -39,6 +39,7 @@ enum CommandLineParseResult
 struct CommandOptions
 {
     QString startupText;      // help
+    bool helpRequested=false;
     bool spanUpload=false;
     bool enableCleanup=true;  // disable for acquisition mode
 };
@@ -123,6 +124,7 @@ private:
     QPushButton *_cleanAllDICOMs;
     QLabel *_totalSizeSubDirs;
 
+    void createGUI();
     QWidget *createScanPanel();
     QWidget *createUploadPanel();
     QWidget *createCleanPanel();
