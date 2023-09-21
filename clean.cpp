@@ -67,7 +67,7 @@ void MainWindow::findDICOMs(bool all, bool remove)
     for (int jScan=0; jScan<_scans.size(); jScan++)
     {
         scanType scan = _scans.at(jScan);
-        bool includeScan = all | !scan.selectedAsImportant;
+        bool includeScan = all || scan.selectedAsImportant;
         qint64 totalSizeThisScan=0;
         if ( includeScan )
         {
@@ -135,7 +135,7 @@ void MainWindow::findFIDs(bool all, bool remove)
     for (int jScan=0; jScan<_scans.size(); jScan++)
     {
         scanType scan = _scans.at(jScan);
-        bool includeScan = all | !scan.selectedAsImportant;
+        bool includeScan = all || scan.selectedAsImportant;
         qint64 totalSizeThisScan=0;
         if ( includeScan )
         {

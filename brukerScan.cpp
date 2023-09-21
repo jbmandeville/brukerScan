@@ -48,11 +48,6 @@ CommandLineParseResult MainWindow::parseCommandLine(QStringList commandLine)
     if ( parser.isSet(spanOption) )    _inputOptions.spanUpload = true;
     if ( parser.isSet(noCleanOption) ) _inputOptions.enableCleanup = false;
 
-    FUNC_INFO << "span is set??" << _inputOptions.spanUpload;
-
-    int numberArguments = commandLine.count();
-    if ( numberArguments > 2 )   // executable [--span]
-        return CommandLineError;
     _inputOptions.startupText = parser.helpText();
 
     return CommandLineOk;
@@ -81,7 +76,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     if ( !_inputOptions.helpRequested )
     {
         createGUI();
-        updateStudy();
+        readStudyDirectory();
         show();
     }
 }
@@ -106,7 +101,7 @@ void MainWindow::createGUI()
     QIcon refreshIcon(pixmapRefresh);
     refreshSubject->setIcon(refreshIcon);
     refreshSubject->setToolTip("Rescan the current directory (maybe still in progress) and reset default check marks");
-    connect(refreshSubject, SIGNAL(clicked()), this, SLOT(updateStudy()));
+    connect(refreshSubject, SIGNAL(clicked()), this, SLOT(readStudyDirectory()));
 
     auto *queryLayout = new QGridLayout();
     queryLayout->addWidget(subjectIDLabel,0,0);
@@ -147,7 +142,8 @@ void MainWindow::createGUI()
     _scanTable = new QTableWidget(this);
 //    _scanTable->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::MinimumExpanding);
 //    _scanTable->setSizeAdjustPolicy(QAbstractScrollArea::AdjustToContentsOnFirstShow);
-    connect( _scanTable, SIGNAL(cellClicked(int,int)), this, SLOT(changedHighlightScan(int,int)));
+    connect(_scanTable, SIGNAL(cellClicked(int,int)), this, SLOT(changedHighlightScan(int,int)));
+    connect(_scanTable, SIGNAL(itemClicked(QTableWidgetItem *)), this, SLOT(tableItemClicked(QTableWidgetItem *)));
     QHeaderView *headerView = _scanTable->horizontalHeader();
     connect(headerView, SIGNAL(sectionClicked(int)), this, SLOT(headerClicked(int)));
 
@@ -270,7 +266,19 @@ void MainWindow::createGUI()
     _helpTool->restoreGeometry(_savedSettings.imageWindowGeometry);
 }
 
-void MainWindow::updateStudy()
+void MainWindow::tableItemClicked(QTableWidgetItem *item)
+{
+    if ( item->column() == 0 )
+    {
+        bool checked = (item->checkState() == Qt::Checked);
+        int iScan = item->row();
+        _scans[iScan].selectedAsImportant = checked;
+        // update the important scan directories list
+        writeAllNotes();
+    }
+}
+
+void MainWindow::readStudyDirectory()
 {
     // read notes, subject file, and scan directories
     loadNotes();
@@ -293,6 +301,7 @@ void MainWindow::updateStudy()
 
 void MainWindow::openNewSubject()
 {
+    writeAllNotes();
     QString message;
     message = "Select a Bruker scan directory";
     _statusBar->showMessage(message,20000);
@@ -308,7 +317,7 @@ void MainWindow::openNewSubject()
     FUNC_INFO << "dirName" << dirName;
     if ( dirName.isEmpty() ) return;
     QDir::setCurrent(dirName);
-    updateStudy();
+    readStudyDirectory();
 }
 
 
@@ -510,7 +519,7 @@ void MainWindow::loadNotes()
 
     // find the 1st tab; also, read parameters
     QStringList stringList;
-    _saveSelectedScans.clear();
+    _selectedScansLoadedFromNotes.clear();
     bool newTab = false;
     while ( !in_stream.atEnd() && !newTab )
     {
@@ -521,7 +530,7 @@ void MainWindow::loadNotes()
         if ( !keyword.compare("selected-scans") )
         {
             for (int jList=1; jList<stringList.count(); jList++)
-                _saveSelectedScans.append(stringList.at(jList));
+                _selectedScansLoadedFromNotes.append(stringList.at(jList));
         }
 
         FUNC_INFO << stringList;

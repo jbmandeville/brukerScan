@@ -31,7 +31,7 @@ void MainWindow::changedHighlightScan(int row, int column)
 void MainWindow::headerClicked(int column)
 {
     if ( column == 1) _reverseOrderScans = !_reverseOrderScans;
-    updateStudy();
+    scanDirectories();
 }
 
 void MainWindow::viewScanUsingFastMap()
@@ -115,7 +115,6 @@ void MainWindow::scanDirectories()
     FUNC_INFO << folderList;
 
     _scans.clear();
-    _saveSelectedScans.clear();
     QTime maxTime = QTime(0, 0, 0, 0);
     QTime minTime = QTime(23, 59, 59, 0);
     for (int jScan=0; jScan<folderList.size(); jScan++)
@@ -154,8 +153,8 @@ void MainWindow::scanDirectories()
             FUNC_INFO << "orderList for scan" << jScan << "name" << name << "=" << orderList;
             if ( orderList.contains("FG_ECHO") ) thisScan.reorderEchoes = true;
             FUNC_INFO << "visOrder" << visOrder;
-            if ( _saveSelectedScans.count() > 0 )
-                thisScan.selectedAsImportant = _saveSelectedScans.contains(name);
+            if ( _selectedScansLoadedFromNotes.count() > 0 )
+                thisScan.selectedAsImportant = _selectedScansLoadedFromNotes.contains(name);
             else
                 thisScan.selectedAsImportant = thisScan.dim.z > 3 || thisScan.dim.t > 1;
             if ( thisScan.timeStart < minTime ) minTime = thisScan.timeStart;
@@ -167,7 +166,7 @@ void MainWindow::scanDirectories()
     QString text = QString("%1    -->   %2   ,   duration %3 min").arg(minTime.toString()).arg(maxTime.toString()).arg(diffMin);
     _subjectScanTimes->setText(text);
 
-    // sort the scans by start time
+    // sort the scans
     iVector scanIndex;
     dVector scanNumber;
     for (int jScan=0; jScan<_scans.count(); jScan++)
@@ -200,7 +199,7 @@ void MainWindow::scanDirectories()
         pixmap.load(":/My-Icons/downArrow.png");
     QIcon arrowIcon(pixmap);
     QTableWidgetItem *scanHeaderItem = new QTableWidgetItem(arrowIcon,"Scan");
-    QTableWidgetItem *seqHeaderItem   = new QTableWidgetItem(tr("Sequence"));
+    QTableWidgetItem *seqHeaderItem  = new QTableWidgetItem(tr("Sequence"));
     QTableWidgetItem *xHeaderItem = new QTableWidgetItem(tr("x"));
     QTableWidgetItem *yHeaderItem = new QTableWidgetItem(tr("y"));
     QTableWidgetItem *zHeaderItem = new QTableWidgetItem(tr("z"));
@@ -224,9 +223,10 @@ void MainWindow::scanDirectories()
 
     for (int jScan=0; jScan<_scans.size(); jScan++)
     {
+        FUNC_INFO << "jScan" << jScan;
         scanType scan = _scans.at(jScan);
 
-        QTableWidgetItem *checkItem= new QTableWidgetItem("");
+        QTableWidgetItem *checkItem = new QTableWidgetItem("");
         QTableWidgetItem *scanItem = new QTableWidgetItem(QString("%1").arg(scan.scanName));
         QTableWidgetItem *seqItem  = new QTableWidgetItem(QString("%1").arg(scan.sequenceName));
         QTableWidgetItem *xItem    = new QTableWidgetItem(QString("%1").arg(scan.dim.x));
@@ -268,12 +268,15 @@ void MainWindow::scanDirectories()
     // select the first important scan
     for (int jScan=0; jScan<_scans.size(); jScan++)
     {
-        if ( _scans.at(jScan).selectedAsImportant )
+        FUNC_INFO << "jScan" << jScan;
+        scanType scan = _scans.at(jScan);
+        if ( scan.selectedAsImportant )
         {
             _scanTable->selectRow(jScan);
             break;
         }
     }
+    FUNC_EXIT;
 }
 
 iPoint4D MainWindow::getImageDimensions(QString dirname)

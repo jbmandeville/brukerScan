@@ -86,7 +86,7 @@ private:
     QString _IDAUploaderFile     = "/space/deltabp/1/users/public/bins/IDA-Uploader-2.0.jar";
 
     QString _subjectIDSavedAtScanTime;
-    QStringList _saveSelectedScans;
+    QStringList _selectedScansLoadedFromNotes;
     bool _reverseOrderScans=true;
     QVector<scanType> _scans;
     savedSettings _savedSettings;
@@ -133,6 +133,7 @@ private:
     QString readFileTextArgument(QString fileName, QString parameterName);
     void readSubjectVariables();
     void readSmoothing(int which);
+    void scanDirectories();
     void writeAllNotes();
     void loadNotes();
     void loadHelp(int whichTab);
@@ -141,7 +142,6 @@ private:
     int getVisuCoreOrientation(QString fileName);
     iPoint4D getImageDimensions(QString dirname);
     void getSequenceTimes(QString fileName, scanType &scan);
-    void scanDirectories();
     QString concatenateSelectedScanString();
 
     void updateCleaningList();
@@ -171,8 +171,9 @@ private slots:
     void displayFM(int iScan);
     void changedHighlightScan(int row, int column);
     void headerClicked(int column);
+    void tableItemClicked(QTableWidgetItem *item);
     void openNewSubject();
-    void updateStudy();
+    void readStudyDirectory();
 
     void prepareDataForUpload();
     void runIDUploader();
