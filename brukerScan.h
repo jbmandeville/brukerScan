@@ -65,7 +65,8 @@ private:
         QTime timeStart;
         QTime timeEnd;
         iPoint4D dim={0,0,0,0};  // x,y,z,t
-        bool completedScan;   // contains 2dseq and visu_pars
+        bool completedScan=false;   // contains 2dseq and visu_pars
+        bool recoScan=false;   // contains at least reco
         bool selectedAsImportant=false;
         bool reorderEchoes=false;
     };

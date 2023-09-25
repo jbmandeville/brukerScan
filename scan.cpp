@@ -26,7 +26,7 @@ void MainWindow::changedHighlightScan(int row, int column)
 {
     FUNC_ENTER << row << column;
     _scanTable->selectRow(row);
-    _viewUsingFastmap->setEnabled(_scans.at(row).completedScan);
+    _viewUsingFastmap->setEnabled(_scans.at(row).completedScan || _scans.at(row).recoScan);
 }
 void MainWindow::headerClicked(int column)
 {
@@ -123,18 +123,22 @@ void MainWindow::scanDirectories()
         QString nameMethod = scanDir.dirName() + "/method";
         QString name2dseq = scanDir.dirName() + "/pdata/1/2dseq";
         QString nameVisuPars = scanDir.dirName() + "/pdata/1/visu_pars";
+        QString nameReco     = scanDir.dirName() + "/pdata/1/reco";
         QFileInfo checkMethod(nameMethod);
         QFileInfo check2dseq(name2dseq);
         QFileInfo checkVisuPars(nameVisuPars);
+        QFileInfo checkReco(nameReco);
         bool fileMethodExists   = checkMethod.exists()   && checkMethod.isFile();
         bool file2dseqExists    = check2dseq.exists()    && check2dseq.isFile();
         bool fileVisuParsExists = checkVisuPars.exists() && checkVisuPars.isFile();
+        bool fileRecoExists     = checkReco.exists()     && checkReco.isFile();
         if ( fileMethodExists )
         {
             QString name = folderList.at(jScan);
             int scanNumber = name.toInt();
             scanType thisScan;
             thisScan.completedScan = file2dseqExists && fileVisuParsExists;
+            thisScan.recoScan      = file2dseqExists && fileRecoExists;
             thisScan.scanNumber = scanNumber;
             thisScan.scanName   = name;
             QString fileName = topDir.dirName() + "/" + name + "/method";
@@ -258,7 +262,13 @@ void MainWindow::scanDirectories()
         // disable the whole row if the scan is not completed
         for (int jItem=0; jItem<10; jItem++)
         {
-            if ( !scan.completedScan ) _scanTable->item(jScan,jItem)->setFlags(_scanTable->item(jScan,jItem)->flags() & !Qt::ItemIsEnabled );
+            if ( !scan.completedScan )
+            {
+                if ( !scan.recoScan )
+                    _scanTable->item(jScan,jItem)->setFlags(_scanTable->item(jScan,jItem)->flags() & !Qt::ItemIsEnabled );
+                else
+                    _scanTable->item(jScan,jItem)->setBackground(QBrush(Qt::gray));
+            }
         }
     }
     _scanTable->resizeColumnsToContents();
