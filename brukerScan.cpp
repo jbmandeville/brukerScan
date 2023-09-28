@@ -101,7 +101,7 @@ void MainWindow::createGUI()
     QIcon refreshIcon(pixmapRefresh);
     refreshSubject->setIcon(refreshIcon);
     refreshSubject->setToolTip("Rescan the current directory (maybe still in progress) and reset default check marks");
-    connect(refreshSubject, SIGNAL(clicked()), this, SLOT(readStudyDirectory()));
+    connect(refreshSubject, SIGNAL(clicked()), this, SLOT(refreshStudy()));
 
     auto *queryLayout = new QGridLayout();
     queryLayout->addWidget(subjectIDLabel,0,0);
@@ -278,6 +278,12 @@ void MainWindow::tableItemClicked(QTableWidgetItem *item)
     }
 }
 
+void MainWindow::refreshStudy()
+{
+    _refreshStudy = true;
+    readStudyDirectory();
+}
+
 void MainWindow::readStudyDirectory()
 {
     // read notes, subject file, and scan directories
@@ -317,6 +323,7 @@ void MainWindow::openNewSubject()
     FUNC_INFO << "dirName" << dirName;
     if ( dirName.isEmpty() ) return;
     QDir::setCurrent(dirName);
+    _refreshStudy = false;
     readStudyDirectory();
 }
 

@@ -89,6 +89,7 @@ private:
     QString _subjectIDSavedAtScanTime;
     QStringList _selectedScansLoadedFromNotes;
     bool _reverseOrderScans=true;
+    bool _refreshStudy=false;
     QVector<scanType> _scans;
     savedSettings _savedSettings;
     QSettings _savedQSettings;
@@ -144,6 +145,7 @@ private:
     iPoint4D getImageDimensions(QString dirname);
     void getSequenceTimes(QString fileName, scanType &scan);
     QString concatenateSelectedScanString();
+    void readStudyDirectory();
 
     void updateCleaningList();
 
@@ -174,7 +176,7 @@ private slots:
     void headerClicked(int column);
     void tableItemClicked(QTableWidgetItem *item);
     void openNewSubject();
-    void readStudyDirectory();
+    void refreshStudy();
 
     void prepareDataForUpload();
     void runIDUploader();

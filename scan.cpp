@@ -157,7 +157,7 @@ void MainWindow::scanDirectories()
             FUNC_INFO << "orderList for scan" << jScan << "name" << name << "=" << orderList;
             if ( orderList.contains("FG_ECHO") ) thisScan.reorderEchoes = true;
             FUNC_INFO << "visOrder" << visOrder;
-            if ( _selectedScansLoadedFromNotes.count() > 0 )
+            if ( _selectedScansLoadedFromNotes.count() > 0 && !_refreshStudy )
                 thisScan.selectedAsImportant = _selectedScansLoadedFromNotes.contains(name);
             else
                 thisScan.selectedAsImportant = thisScan.dim.z > 3 || thisScan.dim.t > 1;
