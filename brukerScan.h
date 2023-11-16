@@ -78,7 +78,6 @@ private:
         QByteArray helpWindowGeometry;
     };
 
-    QString _fastmapProcess     = "/usr/pubsw/packages/FASTMAP/current/bin/FM";
     QString _scriptDirectory    = "/space/deltabp/1/users/public/script/Bruker/";
 
     QString _dataBaseDirectory   = "/homes/1/jbm/space2/projects/span2/";
