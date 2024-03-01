@@ -394,10 +394,10 @@ void MainWindow::getSequenceTimes(QString fileName, scanType &scan)
                 QRegularExpression splitTime("[:.]");// match an equal
                 QStringList timePieces = stringList.at(2).split(splitTime);
                 bool ok;
-                int startHours   = timePieces.at(0).toInt(&ok);
-                int startMinutes = timePieces.at(1).toInt(&ok);
-                int startSeconds = timePieces.at(2).toInt(&ok);
-                scan.timeStart = QTime(startHours, startMinutes, startSeconds, 0);
+                int endHours   = timePieces.at(0).toInt(&ok);
+                int endMinutes = timePieces.at(1).toInt(&ok);
+                int endSeconds = timePieces.at(2).toInt(&ok);
+                scan.timeEnd = QTime(endHours, endMinutes, endSeconds, 0);
 
                 // get the length of the scan
                 QString lengthScan = getParameterString(fileName,"PVM_ScanTimeStr");
@@ -409,9 +409,9 @@ void MainWindow::getSequenceTimes(QString fileName, scanType &scan)
                 QTime lengthTime = QTime(lengthHours, lengthMinutes, lengthSeconds, 0);
                 scan.durationMinutes = static_cast<double>(lengthTime.msecsSinceStartOfDay()) / 1000. / 60.;
                 // qInfo() << "duration minutes" << scan.durationMinutes;
-                scan.timeEnd = scan.timeStart.addSecs(lengthHours * 60 * 60);
-                scan.timeEnd = scan.timeEnd.addSecs(lengthMinutes * 60);
-                scan.timeEnd = scan.timeEnd.addSecs(lengthSeconds);
+                scan.timeStart = scan.timeEnd.addSecs(-lengthHours * 60 * 60);
+                scan.timeStart = scan.timeStart.addSecs(-lengthMinutes * 60);
+                scan.timeStart = scan.timeStart.addSecs(-lengthSeconds);
                 scan.timeStartString = scan.timeStart.toString();
                 scan.timeEndString = scan.timeEnd.toString();
                 break;
