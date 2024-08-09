@@ -20,6 +20,7 @@
 #include <QStatusBar>
 #include <QHBoxLayout>
 #include <QTime>
+#include <QSplitter>
 
 #include "io.h"
 
@@ -96,7 +97,7 @@ private:
     CommandOptions _inputOptions;
     CommandLineParseResult parseCommandLine(QStringList commandLine);
 
-    QWidget *_centralWidget;
+    QSplitter *_centralWidget;
     QTabWidget *_tabs;
     QStatusBar *_statusBar;
     QVector<QTextEdit *> _noteBox;

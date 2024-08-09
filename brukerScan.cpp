@@ -110,10 +110,14 @@ void MainWindow::createGUI()
     queryLayout->addWidget(openDirectory,0,3);
 
     _subjectScanTimes = new QLabel();
+    _viewUsingFastmap = new QPushButton("view using FastMap");
+    _viewUsingFastmap->setToolTip("Display using fastmap after creating header file 2dseq.hdr\nor reordering data into image.nii");
+    connect(_viewUsingFastmap, SIGNAL(pressed()), this, SLOT(viewScanUsingFastMap()));
 
     auto *subjectLayout = new QVBoxLayout();
     subjectLayout->addLayout(queryLayout);
     subjectLayout->addWidget(_subjectScanTimes);
+    subjectLayout->addWidget(_viewUsingFastmap);
 
     auto *subjectGroupBox = new QGroupBox("Subject information");
     subjectGroupBox->setLayout(subjectLayout);
@@ -153,13 +157,18 @@ void MainWindow::createGUI()
     scansBox->setLayout(scansLayout);
 
     FUNC_INFO << "create mainLayout";
-    _centralWidget = new QWidget(this);
-    this->setCentralWidget( _centralWidget );
-    auto *mainLayout = new QVBoxLayout( _centralWidget );
+    _centralWidget = new QSplitter(this);
+    _centralWidget->setOrientation(Qt::Vertical);
+
+    setCentralWidget( _centralWidget );
+    auto *mainWidget = new QWidget();
+    auto *mainLayout = new QVBoxLayout( mainWidget );
     mainLayout->addWidget(subjectGroupBox);
     mainLayout->addWidget(_tabs);
     mainLayout->addWidget(scansBox);
     FUNC_INFO << 1;
+    auto *notesWidget = new QWidget();
+    auto *notesLayout = new QVBoxLayout(notesWidget);
     _noteBox.resize(_tabs->count());
     for (int jNote=0; jNote<_tabs->count(); jNote++)
     {
@@ -167,20 +176,23 @@ void MainWindow::createGUI()
         _noteBox[jNote] = new QTextEdit("");
         _noteBox[jNote]->setMaximumHeight(250);
         _noteBox[jNote]->setVisible(false);
-        mainLayout->addWidget(_noteBox[jNote]);
+        notesLayout->addWidget(_noteBox[jNote]);
     }
-
     FUNC_INFO << "status bar";
     _statusBar = this->statusBar();
     _statusBar->setStyleSheet("color:Darkred");
-    mainLayout->addWidget(_statusBar);
+    notesLayout->addWidget(_statusBar);
+
+    _centralWidget->addWidget(mainWidget);
+    _centralWidget->addWidget(notesWidget);
+
     FUNC_INFO << "last stretch" << mainLayout->count()-1;
     mainLayout->setStretch(0,1);        // subject box
     mainLayout->setStretch(1,2);        // top panel (page-specific)
     mainLayout->setStretch(2,20);       // scans
-    mainLayout->setStretch(3,1);        // note 1
-    mainLayout->setStretch(4,1);        // note 2
-    mainLayout->setStretch(5,1);        // status bar
+    notesLayout->setStretch(0,5);        // note 1
+    notesLayout->setStretch(0,5);        // note 2
+    notesLayout->setStretch(0,1);        // status bar
 
     // add a menu
     auto *menuBar = new QMenuBar;

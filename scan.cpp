@@ -8,11 +8,12 @@ QWidget *MainWindow::createScanPanel()
     auto *scanPanel = new QWidget();
 
     auto *viewLayout = new QVBoxLayout();
+    /*
     _viewUsingFastmap = new QPushButton("view using FastMap");
     _viewUsingFastmap->setToolTip("Display using fastmap after creating header file 2dseq.hdr\nor reordering data into image.nii");
     connect(_viewUsingFastmap, SIGNAL(pressed()), this, SLOT(viewScanUsingFastMap()));
-
     viewLayout->addWidget(_viewUsingFastmap);
+    */
     auto *viewBox = new QGroupBox("View selected scan");
     viewBox->setLayout(viewLayout);
 
