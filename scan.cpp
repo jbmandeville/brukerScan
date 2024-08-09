@@ -387,12 +387,15 @@ void MainWindow::getSequenceTimes(QString fileName, scanType &scan)
         if ( !parameter.compare(fullParameterName,Qt::CaseInsensitive) && stringList.count() == 2)
         {
             QString line = in_stream.readLine();
+            line = in_stream.readLine();
             QRegularExpression space("[\\s+]");// match an equal
             QStringList stringList = line.split(space);  // clazy:exclude=use-static-qregularexpression
+            FUNC_INFO << "stringList" << stringList;
             if ( stringList.count() > 2 )
             {
                 QRegularExpression splitTime("[:.]");// match an equal
                 QStringList timePieces = stringList.at(2).split(splitTime);
+                FUNC_INFO << "timePieces" << timePieces;
                 bool ok;
                 int endHours   = timePieces.at(0).toInt(&ok);
                 int endMinutes = timePieces.at(1).toInt(&ok);
@@ -400,14 +403,18 @@ void MainWindow::getSequenceTimes(QString fileName, scanType &scan)
                 scan.timeEnd = QTime(endHours, endMinutes, endSeconds, 0);
 
                 // get the length of the scan
-                QString lengthScan = getParameterString(fileName,"PVM_ScanTimeStr");
-                QRegularExpression breakUnits("[hms]");// match an equal
-                QStringList lengthPieces = lengthScan.split(breakUnits);
-                int lengthHours   = lengthPieces.at(0).toInt(&ok);
-                int lengthMinutes = lengthPieces.at(1).toInt(&ok);
-                int lengthSeconds = lengthPieces.at(2).toInt(&ok);
+                QString lengthScan = getParameterString(fileName,"PVM_ScanTime");
+                int lengthMs = lengthScan.toInt(&ok);
+                int lengthSeconds = lengthMs / 1000;
+                int lengthMinutes = lengthSeconds / 60;
+                int lengthHours   = lengthMinutes / 60;
+                lengthMinutes -= lengthHours * 60;
+                lengthSeconds -= lengthHours * 60 * 60 + lengthMinutes*60;
+                FUNC_INFO << "lengths" << lengthMs << lengthSeconds << lengthMinutes << lengthHours;
                 QTime lengthTime = QTime(lengthHours, lengthMinutes, lengthSeconds, 0);
+                FUNC_INFO << "QTime" << lengthTime;
                 scan.durationMinutes = static_cast<double>(lengthTime.msecsSinceStartOfDay()) / 1000. / 60.;
+                FUNC_INFO << "durationMinutes" << scan.durationMinutes;
                 // qInfo() << "duration minutes" << scan.durationMinutes;
                 scan.timeStart = scan.timeEnd.addSecs(-lengthHours * 60 * 60);
                 scan.timeStart = scan.timeStart.addSecs(-lengthMinutes * 60);

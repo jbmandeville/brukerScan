@@ -94,7 +94,8 @@ void MainWindow::prepareDataForUpload()
             QString sourceDir = "./" + scan.scanName + "/pdata/1/dicom";
             QDir dicomDir(sourceDir);
             FUNC_INFO << "dicomDir" << dicomDir.absolutePath();
-            QStringList const fileList = dicomDir.entryList( {"MR*"}, QDir::Files | QDir::NoSymLinks);
+            QStringList const fileList = dicomDir.entryList( {"*.dcm"}, QDir::Files | QDir::NoSymLinks);
+//            QStringList const fileList = dicomDir.entryList( {"MR*"}, QDir::Files | QDir::NoSymLinks);
             FUNC_INFO << "fileList" << fileList;
             for (int jFile=0; jFile<fileList.size(); jFile++)
             {
