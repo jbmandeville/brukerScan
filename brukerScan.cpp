@@ -140,8 +140,10 @@ void MainWindow::createGUI()
     auto *cleanPanel  = createCleanPanel();
     _tabs->addTab(cleanPanel, tr("cleanup"));
     _tabs->setTabToolTip(iPanel++,"Clean (remove) unnessary files to save space");
-
     connect(_tabs, SIGNAL(currentChanged(int)), this, SLOT(changedPage(int)));
+
+    bool showTabs = _inputOptions.spanUpload || _inputOptions.enableCleanup;
+    _tabs->setVisible(showTabs);
 
     _scanTable = new QTableWidget(this);
 //    _scanTable->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::MinimumExpanding);
@@ -162,13 +164,13 @@ void MainWindow::createGUI()
 
     setCentralWidget( _centralWidget );
     auto *mainWidget = new QWidget();
-    auto *mainLayout = new QVBoxLayout( mainWidget );
-    mainLayout->addWidget(subjectGroupBox);
-    mainLayout->addWidget(_tabs);
-    mainLayout->addWidget(scansBox);
+    _mainLayout = new QVBoxLayout( mainWidget );
+    _mainLayout->addWidget(subjectGroupBox);
+    _mainLayout->addWidget(_tabs);
+    _mainLayout->addWidget(scansBox);
     FUNC_INFO << 1;
     auto *notesWidget = new QWidget();
-    auto *notesLayout = new QVBoxLayout(notesWidget);
+    _notesLayout = new QVBoxLayout(notesWidget);
     _noteBox.resize(_tabs->count());
     for (int jNote=0; jNote<_tabs->count(); jNote++)
     {
@@ -176,27 +178,26 @@ void MainWindow::createGUI()
         _noteBox[jNote] = new QTextEdit("");
         _noteBox[jNote]->setMaximumHeight(250);
         _noteBox[jNote]->setVisible(false);
-        notesLayout->addWidget(_noteBox[jNote]);
+        _notesLayout->addWidget(_noteBox[jNote]);
     }
     FUNC_INFO << "status bar";
     _statusBar = this->statusBar();
     _statusBar->setStyleSheet("color:Darkred");
-    notesLayout->addWidget(_statusBar);
+    _notesLayout->addWidget(_statusBar);
 
     _centralWidget->addWidget(mainWidget);
     _centralWidget->addWidget(notesWidget);
 
-    FUNC_INFO << "last stretch" << mainLayout->count()-1;
-    mainLayout->setStretch(0,1);        // subject box
-    mainLayout->setStretch(1,2);        // top panel (page-specific)
-    mainLayout->setStretch(2,20);       // scans
-    notesLayout->setStretch(0,5);        // note 1
-    notesLayout->setStretch(0,5);        // note 2
-    notesLayout->setStretch(0,1);        // status bar
+    FUNC_INFO << "last stretch" << _mainLayout->count()-1;
+    _mainLayout->setStretch(0,1);        // subject box
+    _mainLayout->setStretch(1,5);        // top panel (page-specific)
+    _mainLayout->setStretch(2,20);       // scans
+    _notesLayout->setStretch(0,5);        // note
+    _notesLayout->setStretch(0,1);        // status bar
 
     // add a menu
     auto *menuBar = new QMenuBar;
-    mainLayout->setMenuBar(menuBar);
+    _mainLayout->setMenuBar(menuBar);
     QMenu *mainMenu  = new QMenu(tr("&Menu"), this);
     auto *helpMenu  = new QMenu(tr("Help"), this);
     menuBar->addMenu(mainMenu);
@@ -438,11 +439,33 @@ void MainWindow::showNotes(bool show)
     showNone();
     int tabIndex = _tabs->currentIndex();
     _noteBox[tabIndex]->setVisible(show);
+    QList<int> splitterSizes = _centralWidget->sizes();
+    int totalSize = splitterSizes[0] + splitterSizes[1];
+    if ( !show )
+    {
+        splitterSizes[0] = totalSize-1;
+        splitterSizes[1] = 1;
+        _centralWidget->setSizes(splitterSizes);
+    }
+
 }
 
 void MainWindow::changedPage(int index)
 {
     FUNC_ENTER << index;
+    if ( index == 0 )
+    {
+        qInfo() << "compress tab";
+        _mainLayout->setStretch(0,1);        // subject box
+        _mainLayout->setStretch(1,1);        // top panel (page-specific)
+        _mainLayout->setStretch(2,20);       // scans
+    }
+    else
+    {
+        _mainLayout->setStretch(0,1);        // subject box
+        _mainLayout->setStretch(1,5);        // top panel (page-specific)
+        _mainLayout->setStretch(2,20);       // scans
+    }
     showNotes(_showNotesAction->isChecked());
     writeAllNotes();
     loadHelp(index);

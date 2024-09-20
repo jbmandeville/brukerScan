@@ -98,6 +98,8 @@ private:
     CommandLineParseResult parseCommandLine(QStringList commandLine);
 
     QSplitter *_centralWidget;
+    QVBoxLayout *_mainLayout;
+    QVBoxLayout *_notesLayout;
     QTabWidget *_tabs;
     QStatusBar *_statusBar;
     QVector<QTextEdit *> _noteBox;

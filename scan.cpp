@@ -16,9 +16,11 @@ QWidget *MainWindow::createScanPanel()
     */
     auto *viewBox = new QGroupBox("View selected scan");
     viewBox->setLayout(viewLayout);
+    viewBox->setVisible(false);
 
     auto *pageLayout = new QVBoxLayout();
     pageLayout->addWidget(viewBox);
+    pageLayout->setSpacing(0);
     scanPanel->setLayout(pageLayout);
 
     return scanPanel;

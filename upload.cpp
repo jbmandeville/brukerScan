@@ -42,6 +42,7 @@ QWidget *MainWindow::createUploadPanel()
     locationLayout->addWidget(_IDAUploader,3,1);
     locationLayout->addWidget(runIDAJava,3,2);
 
+    locationLayout->setSpacing(0);
     uploadPanel->setLayout(locationLayout);
     return uploadPanel;
 }

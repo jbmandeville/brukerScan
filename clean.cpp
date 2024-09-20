@@ -43,6 +43,7 @@ QWidget *MainWindow::createCleanPanel()
     pageLayout->addLayout(sizeLayout);
     pageLayout->addLayout(actionLayout);
 
+    pageLayout->setSpacing(0);
     cleanPanel->setLayout(pageLayout);
     return cleanPanel;
 }
