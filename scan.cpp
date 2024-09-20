@@ -7,16 +7,17 @@ QWidget *MainWindow::createScanPanel()
     FUNC_ENTER;
     auto *scanPanel = new QWidget();
 
+    auto *helpText1 = new QLabel("Use '-n' option (no cleanup) to remove this panel and show only scans.");
+    auto *helpText2 = new QLabel("Use '-s' option to enable uploading to SPAN CC.");
+    auto *helpText3 = new QLabel("Use no options to show all 3 tabs with cleanup enabled.");
+
     auto *viewLayout = new QVBoxLayout();
-    /*
-    _viewUsingFastmap = new QPushButton("view using FastMap");
-    _viewUsingFastmap->setToolTip("Display using fastmap after creating header file 2dseq.hdr\nor reordering data into image.nii");
-    connect(_viewUsingFastmap, SIGNAL(pressed()), this, SLOT(viewScanUsingFastMap()));
-    viewLayout->addWidget(_viewUsingFastmap);
-    */
+    viewLayout->addWidget(helpText1);
+    viewLayout->addWidget(helpText2);
+    viewLayout->addWidget(helpText3);
+
     auto *viewBox = new QGroupBox("View selected scan");
     viewBox->setLayout(viewLayout);
-    viewBox->setVisible(false);
 
     auto *pageLayout = new QVBoxLayout();
     pageLayout->addWidget(viewBox);
