@@ -123,19 +123,21 @@ void MainWindow::createGUI()
     subjectGroupBox->setLayout(subjectLayout);
 
     FUNC_INFO << "create tabs";
+    //
+    // 0 = scans
+    // 1 = upload
+    // 2 = cleanup
+    //
     int iPanel=0;
     _tabs = new QTabWidget();
     auto *scanPanel   = createScanPanel();
     _tabs->addTab(scanPanel,  tr("scans"));
     _tabs->setTabToolTip(iPanel++,"Query scan directories");
 
-    if ( _inputOptions.spanUpload )
-    {
-        FUNC_INFO << "create upload panel";
-        auto *uploadPanel = createUploadPanel();
-        _tabs->addTab(uploadPanel, tr("upload"));
-        _tabs->setTabToolTip(iPanel++,"Upload DICOMs to SPAN (LONI) database");
-    }
+    FUNC_INFO << "create upload panel";
+    auto *uploadPanel = createUploadPanel();
+    _tabs->addTab(uploadPanel, tr("upload"));
+    _tabs->setTabToolTip(iPanel++,"Upload DICOMs to SPAN (LONI) database");
 
     auto *cleanPanel  = createCleanPanel();
     _tabs->addTab(cleanPanel, tr("cleanup"));
@@ -144,6 +146,9 @@ void MainWindow::createGUI()
 
     bool showTabs = _inputOptions.spanUpload || _inputOptions.enableCleanup;
     _tabs->setVisible(showTabs);
+
+    _tabs->setTabEnabled(1,_inputOptions.spanUpload);
+    _tabs->setTabEnabled(2,_inputOptions.enableCleanup);
 
     _scanTable = new QTableWidget(this);
 //    _scanTable->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::MinimumExpanding);
